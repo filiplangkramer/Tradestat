@@ -1854,7 +1854,7 @@ function loadData() {
 
 function saveData() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); } catch(e) {}
-  if (window.__fbSave) window.__fbSave('trades', trades);
+  if (window.__fbSave) window.__fbSave('trades', trades.filter(t => !t.id.startsWith('seed_')));
 }
 
 function loadGoals() {
