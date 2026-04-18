@@ -1836,7 +1836,7 @@ function loadData() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const customTrades = parsed.filter(t => t.id && !t.id.startsWith('seed_'));
+        const customTrades = parsed;
         const mergedSeeds = seedWithIds
           .filter(seed => !deletedIds.includes(seed.id))
           .map(seed => {
@@ -1854,7 +1854,7 @@ function loadData() {
 
 function saveData() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); } catch(e) {}
-  if (window.__fbSave) window.__fbSave('trades', trades.filter(t => !t.id.startsWith('seed_')));
+  if (window.__fbSave) window.__fbSave('trades', trades);
 }
 
 function loadGoals() {
