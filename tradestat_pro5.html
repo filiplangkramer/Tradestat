@@ -755,6 +755,22 @@ tr:hover td{background:rgba(94,234,212,0.03);}
 /* Chart canvas resizing fix */
 canvas{max-width:100%!important;}
 </style>
+
+  <!-- Firebase Cloud Sync -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    const fb = initializeApp({apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",authDomain:"tradestat-18e24.firebaseapp.com",projectId:"tradestat-18e24",storageBucket:"tradestat-18e24.firebasestorage.app",messagingSenderId:"1081488272976",appId:"1:1081488272976:web:65156e690afc02bb682b55"});
+    const db = getFirestore(fb);
+    window.__fbSave = async (key,data) => { try { await setDoc(doc(db,'ts',key),{v:JSON.stringify(data)}); } catch(e){ console.warn('FB save:',e); } };
+    window.__fbLoad = async () => {
+      const map = [{fb:'trades',ls:'tradestat_pro_v1'},{fb:'goals',ls:'tradestat_pro_goals_v1'},{fb:'journal',ls:'tradestat_pro_journal_v1'}];
+      let changed = false;
+      for (const k of map) { try { const s=await getDoc(doc(db,'ts',k.fb)); if(s.exists()){localStorage.setItem(k.ls,s.data().v);changed=true;} } catch(e){} }
+      if (changed) { loadData(); loadGoals(); loadJournal(); if(typeof renderAll==='function') renderAll(); }
+    };
+    window.addEventListener('load', ()=>setTimeout(window.__fbLoad, 600));
+  </script>
 </head>
 <body>
 <div class="aurora"><div class="blob-3"></div></div>
@@ -1838,6 +1854,7 @@ function loadData() {
 
 function saveData() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(trades)); } catch(e) {}
+  if (window.__fbSave) window.__fbSave('trades', trades.filter(t => !t.id.startsWith('seed_')));
 }
 
 function loadGoals() {
@@ -1850,7 +1867,7 @@ function loadGoals() {
     { id:'goal_1', name:'Q2 2026', target:1000, start:'2026-04-01', deadline:'2026-06-30', note:'Cíl pro 2. kvartál' },
   ];
 }
-function saveGoals() { try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch(e) {} }
+function saveGoals() { try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch(e) {} if (window.__fbSave) window.__fbSave('goals', goals); }
 
 function loadJournal() {
   try {
@@ -1859,7 +1876,7 @@ function loadJournal() {
   } catch(e) {}
   journal = [];
 }
-function saveJournal() { try { localStorage.setItem(JOURNAL_KEY, JSON.stringify(journal)); } catch(e) {} }
+function saveJournal() { try { localStorage.setItem(JOURNAL_KEY, JSON.stringify(journal)); } catch(e) {} if (window.__fbSave) window.__fbSave('journal', journal); }
 
 function genId() { return 'tr_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 
