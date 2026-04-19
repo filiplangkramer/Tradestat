@@ -762,6 +762,27 @@ canvas{max-width:100%!important;}
 html{scroll-behavior:smooth;}
 body{text-rendering:optimizeLegibility;}
 
+/* ── BEZPEČNOST: skrýt aplikaci dokud Firebase nepotvrdí přihlášení
+   a nenačte data správného uživatele. Bez tohoto by někdo cizí mohl
+   na ~0.5s vidět flash předchozího uživatele dat. */
+.app, #auth-user-bar{
+  visibility:hidden;
+  opacity:0;
+  transition:opacity .22s ease;
+}
+body.app-ready .app,
+body.app-ready #auth-user-bar{
+  visibility:visible;
+  opacity:1;
+}
+/* Loading spinner v overlayi */
+@keyframes ts-spin{to{transform:rotate(360deg);}}
+.ts-spinner{
+  width:18px;height:18px;border:2px solid rgba(94,234,212,0.18);
+  border-top-color:#5eead4;border-radius:50%;
+  animation:ts-spin .7s linear infinite;
+}
+
 /* Vyrovnaná čísla — KPI, tabulky, statistiky drží sloupce */
 .kpi-value,
 .header-stat .val,
@@ -911,18 +932,22 @@ document.getElementById('google-login-btn').addEventListener('click', async () =
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const uid = user.uid;
-    const ov = document.getElementById('auth-overlay');
-    if (ov) ov.remove();
 
-    const existing = document.getElementById('auth-user-bar');
-    if (!existing) {
-      const bar = document.createElement('div');
-      bar.id = 'auth-user-bar';
-      bar.style.cssText = 'position:fixed;top:12px;right:16px;z-index:1000;display:flex;align-items:center;gap:8px;background:rgba(0,245,212,0.1);border:1px solid rgba(0,245,212,0.2);border-radius:20px;padding:6px 12px;font-size:0.8rem;color:#00f5d4;cursor:pointer;';
-      bar.innerHTML = `<img src="${user.photoURL || ''}" width="22" height="22" style="border-radius:50%;display:${user.photoURL ? 'block' : 'none'}" /><span>${user.displayName || user.email}</span><span style="color:#888;margin-left:4px" title="Odhlásit se">✕</span>`;
-      bar.addEventListener('click', () => { if(confirm('Odhlásit se?')) signOut(auth); });
-      document.body.appendChild(bar);
+    // BEZPEČNOST: NEodebírat overlay dokud nejsou data načtená.
+    // Místo toho přepnout overlay na "Načítám…" stav.
+    const ov = document.getElementById('auth-overlay');
+    if (ov) {
+      ov.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:18px;color:#5eead4;font-family:'Space Grotesk',system-ui,sans-serif;"><div class="ts-spinner"></div><div style="font-size:0.9rem;letter-spacing:1px;color:#9aa4c2;">Načítám tvá data…</div></div>`;
     }
+
+    // OKAMŽITĚ vymazat všechna existující data z localStorage i z DOM,
+    // aby render který už proběhl (z bottom JS) nezobrazoval cizí čísla.
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+    // Vyčistit viditelné placeholdery v hlavičce (kdyby byly už vypsané)
+    ['hTotalPL','hWR','hOpen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
 
     const map = [
       {fb:'trades', ls:'tradestat_pro_v1'},
@@ -931,8 +956,6 @@ onAuthStateChanged(auth, async (user) => {
     ];
 
     window.__userLoggedIn = true;
-    // Always clear localStorage first to prevent showing another user's data
-    LS_KEYS.forEach(k => localStorage.removeItem(k));
 
     let hasData = false;
     for (const k of map) {
@@ -959,12 +982,35 @@ onAuthStateChanged(auth, async (user) => {
     if(typeof loadJournal==='function') loadJournal();
     if(typeof renderAll==='function') renderAll();
 
+    // Přidat user bar AŽ TEĎ (po načtení dat)
+    const existing = document.getElementById('auth-user-bar');
+    if (!existing) {
+      const bar = document.createElement('div');
+      bar.id = 'auth-user-bar';
+      bar.style.cssText = 'position:fixed;top:14px;right:18px;z-index:1000;display:flex;align-items:center;gap:8px;background:rgba(20,25,45,0.7);backdrop-filter:blur(10px);border:1px solid rgba(94,234,212,0.2);border-radius:10px;padding:5px 10px 5px 6px;font-size:0.78rem;color:#9aa4c2;cursor:pointer;font-family:"Space Grotesk",system-ui,sans-serif;font-weight:500;transition:border-color .2s;';
+      bar.innerHTML = `<img src="${user.photoURL || ''}" width="22" height="22" style="border-radius:50%;display:${user.photoURL ? 'block' : 'none'}" /><span>${user.displayName || user.email}</span><span style="color:#5b6584;margin-left:4px;font-size:0.85rem" title="Odhlásit se">✕</span>`;
+      bar.addEventListener('click', () => { if(confirm('Odhlásit se?')) signOut(auth); });
+      document.body.appendChild(bar);
+    }
+
+    // FINÁLNĚ: odebrat overlay a odhalit aplikaci.
+    // Až tady má uživatel poprvé vidět svá data — a jsou jeho.
+    document.body.classList.add('app-ready');
+    if (ov) ov.remove();
+
   } else {
     window.__userLoggedIn = false;
-    // On logout: clear localStorage so next user doesn't see old data
+    // Při odhlášení: vymazat localStorage A zrušit ready stav
     LS_KEYS.forEach(k => localStorage.removeItem(k));
+    document.body.classList.remove('app-ready');
     const existingBar = document.getElementById('auth-user-bar');
     if (existingBar) existingBar.remove();
+
+    // Pokud overlay neexistuje (= uživatel se odhlásil v běžící relaci),
+    // reloadni stránku — garantovaně čistý stav pro dalšího uživatele.
+    if (!document.getElementById('auth-overlay')) {
+      location.reload();
+    }
   }
 });
 
