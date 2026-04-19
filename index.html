@@ -762,11 +762,12 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
+const ALLOWED_EMAILS = ['fido.fifina@gmail.com', 'filip.langkramer@gmail.com'];
+
 const fb = initializeApp({apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",authDomain:"tradestat-18e24.firebaseapp.com",projectId:"tradestat-18e24",storageBucket:"tradestat-18e24.firebasestorage.app",messagingSenderId:"1081488272976",appId:"1:1081488272976:web:65156e690afc02bb682b55"});
 const db = getFirestore(fb);
 const auth = getAuth(fb);
 
-// Login overlay
 const overlay = document.createElement('div');
 overlay.id = 'auth-overlay';
 overlay.style.cssText = 'position:fixed;inset:0;background:#070912;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;gap:24px;';
@@ -785,10 +786,16 @@ document.getElementById('google-login-btn').addEventListener('click', async () =
 });
 
 onAuthStateChanged(auth, async (user) => {
-  const ov = document.getElementById('auth-overlay');
   if (user) {
+    const email = (user.email || '').toLowerCase();
+    if (!ALLOWED_EMAILS.includes(email)) {
+      await signOut(auth);
+      const errEl = document.getElementById('auth-error');
+      if (errEl) { errEl.textContent = 'Přístup zamítnut. Tento účet nemá oprávnění.'; errEl.style.display = 'block'; }
+      return;
+    }
+    const ov = document.getElementById('auth-overlay');
     if (ov) ov.remove();
-    // Show user info in app
     const existing = document.getElementById('auth-user-bar');
     if (!existing) {
       const bar = document.createElement('div');
@@ -798,15 +805,11 @@ onAuthStateChanged(auth, async (user) => {
       bar.addEventListener('click', () => { if(confirm('Odhlásit se?')) signOut(auth); });
       document.body.appendChild(bar);
     }
-    // Load data from Firebase
     const map = [{fb:'trades',ls:'tradestat_pro_v1'},{fb:'goals',ls:'tradestat_pro_goals_v1'},{fb:'journal',ls:'tradestat_pro_journal_v1'}];
     let changed = false;
     for (const k of map) { try { const s=await getDoc(doc(db,'ts',k.fb)); if(s.exists()){localStorage.setItem(k.ls,s.data().v);changed=true;} } catch(e){} }
     if (changed) { loadData(); loadGoals(); loadJournal(); if(typeof renderAll==='function') renderAll(); }
   } else {
-    if (!ov) {
-      const newOv = document.getElementById('auth-overlay') || (() => { const d=document.createElement('div'); d.id='auth-overlay'; document.body.appendChild(d); return d; })();
-    }
     const existingBar = document.getElementById('auth-user-bar');
     if (existingBar) existingBar.remove();
   }
