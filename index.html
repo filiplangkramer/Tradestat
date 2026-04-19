@@ -808,6 +808,7 @@ onAuthStateChanged(auth, async (user) => {
       {fb:'journal',ls:'tradestat_pro_journal_v1'}
     ];
 
+    window.__userLoggedIn = true;
     // Always clear localStorage first to prevent showing another user's data
     LS_KEYS.forEach(k => localStorage.removeItem(k));
 
@@ -837,6 +838,7 @@ onAuthStateChanged(auth, async (user) => {
     if(typeof renderAll==='function') renderAll();
 
   } else {
+    window.__userLoggedIn = false;
     // On logout: clear localStorage so next user doesn't see old data
     LS_KEYS.forEach(k => localStorage.removeItem(k));
     const existingBar = document.getElementById('auth-user-bar');
@@ -1919,6 +1921,11 @@ function loadData() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const customTrades = parsed.filter(t => t.id && !t.id.startsWith('seed_'));
+        // If user is logged in, only show their own trades — no seed trades
+        if (window.__userLoggedIn) {
+          trades = customTrades;
+          return;
+        }
         const mergedSeeds = seedWithIds
           .filter(seed => !deletedIds.includes(seed.id))
           .map(seed => {
@@ -1931,6 +1938,11 @@ function loadData() {
       }
     }
   } catch(e) {}
+  // If user is logged in but has no data yet — start with empty list
+  if (window.__userLoggedIn) {
+    trades = [];
+    return;
+  }
   trades = seedWithIds.filter(seed => !deletedIds.includes(seed.id));
 }
 
