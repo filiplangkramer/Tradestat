@@ -763,6 +763,7 @@ import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/fireb
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const FILIP_UID = 'Nd8Gh5jBRTSQOPcY3rdYZgn9uLo2';
+const LS_KEYS = ['tradestat_pro_v1', 'tradestat_pro_goals_v1', 'tradestat_pro_journal_v1'];
 
 const fb = initializeApp({apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",authDomain:"tradestat-18e24.firebaseapp.com",projectId:"tradestat-18e24",storageBucket:"tradestat-18e24.firebasestorage.app",messagingSenderId:"1081488272976",appId:"1:1081488272976:web:65156e690afc02bb682b55"});
 const db = getFirestore(fb);
@@ -807,32 +808,37 @@ onAuthStateChanged(auth, async (user) => {
       {fb:'journal',ls:'tradestat_pro_journal_v1'}
     ];
 
-    let changed = false;
+    // Always clear localStorage first to prevent showing another user's data
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+
+    let hasData = false;
     for (const k of map) {
       try {
-        // Load from per-user path
         const userDoc = await getDoc(doc(db, 'users', uid, 'data', k.fb));
         if (userDoc.exists()) {
           localStorage.setItem(k.ls, userDoc.data().v);
-          changed = true;
+          hasData = true;
         } else if (uid === FILIP_UID) {
-          // One-time migration: copy from old /ts/{key} to new /users/{uid}/data/{key}
+          // One-time migration from old /ts/{key}
           const oldDoc = await getDoc(doc(db, 'ts', k.fb));
           if (oldDoc.exists()) {
             await setDoc(doc(db, 'users', uid, 'data', k.fb), {v: oldDoc.data().v});
             localStorage.setItem(k.ls, oldDoc.data().v);
-            changed = true;
+            hasData = true;
           }
         }
       } catch(e) { console.warn('load error:', e); }
     }
-    if (changed) {
-      if(typeof loadData==='function') loadData();
-      if(typeof loadGoals==='function') loadGoals();
-      if(typeof loadJournal==='function') loadJournal();
-      if(typeof renderAll==='function') renderAll();
-    }
+
+    // Reload app with correct data (or empty for new users)
+    if(typeof loadData==='function') loadData();
+    if(typeof loadGoals==='function') loadGoals();
+    if(typeof loadJournal==='function') loadJournal();
+    if(typeof renderAll==='function') renderAll();
+
   } else {
+    // On logout: clear localStorage so next user doesn't see old data
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
     const existingBar = document.getElementById('auth-user-bar');
     if (existingBar) existingBar.remove();
   }
