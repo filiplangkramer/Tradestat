@@ -1921,9 +1921,10 @@ function loadData() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const customTrades = parsed.filter(t => t.id && !t.id.startsWith('seed_'));
-        // If user is logged in, only show their own trades — no seed trades
+        // If user is logged in, show all their saved trades (custom + edited seeds)
         if (window.__userLoggedIn) {
-          trades = customTrades;
+          const editedSeeds = parsed.filter(t => t.id && t.id.startsWith('seed_') && t._userEdited);
+          trades = [...editedSeeds, ...customTrades];
           return;
         }
         const mergedSeeds = seedWithIds
