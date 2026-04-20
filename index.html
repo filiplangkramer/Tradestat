@@ -906,7 +906,7 @@ import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/fireb
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const FILIP_UID = 'Nd8Gh5jBRTSQOPcY3rdYZgn9uLo2';
-const LS_KEYS = ['tradestat_pro_v1', 'tradestat_pro_goals_v1', 'tradestat_pro_journal_v1'];
+const LS_KEYS = ['tradestat_pro_v1', 'tradestat_pro_goals_v1', 'tradestat_pro_journal_v1', 'tradestat_mkdata', 'tradestat_settings_v1'];
 
 const fb = initializeApp({apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",authDomain:"tradestat-18e24.firebaseapp.com",projectId:"tradestat-18e24",storageBucket:"tradestat-18e24.firebasestorage.app",messagingSenderId:"1081488272976",appId:"1:1081488272976:web:65156e690afc02bb682b55"});
 const db = getFirestore(fb);
@@ -950,9 +950,10 @@ onAuthStateChanged(auth, async (user) => {
     });
 
     const map = [
-      {fb:'trades', ls:'tradestat_pro_v1'},
-      {fb:'goals',  ls:'tradestat_pro_goals_v1'},
-      {fb:'journal',ls:'tradestat_pro_journal_v1'}
+      {fb:'trades',   ls:'tradestat_pro_v1'},
+      {fb:'goals',    ls:'tradestat_pro_goals_v1'},
+      {fb:'journal',  ls:'tradestat_pro_journal_v1'},
+      {fb:'settings', ls:'tradestat_settings_v1'}
     ];
 
     window.__userLoggedIn = true;
@@ -980,6 +981,9 @@ onAuthStateChanged(auth, async (user) => {
     if(typeof loadData==='function') loadData();
     if(typeof loadGoals==='function') loadGoals();
     if(typeof loadJournal==='function') loadJournal();
+    if(typeof loadSettings==='function') loadSettings();
+    // Vynucené překreslení benchmark tabu při dalším zobrazení
+    window._benchmarkLoaded = false;
     if(typeof renderAll==='function') renderAll();
 
     // Přidat user bar AŽ TEĎ (po načtení dat)
@@ -1467,6 +1471,11 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
           <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;">USD/CZK</label>
           <input id="manualFX" type="number" step="any" placeholder="21.21"
             style="width:90px;background:var(--glass-light);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-family:var(--fira);font-size:12px;outline:none">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;">Portfolio (Kč)</label>
+          <input id="manualPortfolio" type="number" step="any" placeholder="— nezadáno —"
+            style="width:130px;background:var(--glass-light);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-family:var(--fira);font-size:12px;outline:none">
         </div>
         <button class="btn btn-primary" style="padding:8px 16px;font-size:12px" onclick="applyManualData()">Aktualizovat</button>
       </div>
@@ -3557,6 +3566,7 @@ function resetAll() {
   localStorage.removeItem('tradestat_deleted');
   localStorage.removeItem(OLD_STORAGE_KEY);
   localStorage.removeItem('tradestat_mkdata');
+  localStorage.removeItem(SETTINGS_KEY);
   location.reload();
 }
 
@@ -3860,8 +3870,26 @@ let SP500_MONTHLY = {...SP500_FALLBACK};
 let USDCZK_MONTHLY = {...USDCZK_FALLBACK};
 let USDCZK_NOW = 21.21;
 let SP500_LIVE_PRICE = 6635.86;
-const PORTFOLIO_CZK = 92500;
+let PORTFOLIO_CZK = 0;
 const SP500_BASE = 6296.50;
+
+const SETTINGS_KEY = 'tradestat_settings_v1';
+function loadSettings() {
+  PORTFOLIO_CZK = 0;  // reset před každým načtením, aby se nedržela hodnota z cizího účtu
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (typeof s.portfolioCzk === 'number' && s.portfolioCzk > 0) PORTFOLIO_CZK = s.portfolioCzk;
+    }
+  } catch(e) {}
+}
+function saveSettings() {
+  const s = { portfolioCzk: PORTFOLIO_CZK };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch(e) {}
+  if (window.__fbSave) window.__fbSave('settings', s);
+}
+loadSettings();
 
 function setLiveStatus(ok, msg) {
   const dot = document.getElementById('liveStatusDot');
@@ -3874,10 +3902,12 @@ function setLiveStatus(ok, msg) {
 function applyManualData() {
   const spInput = document.getElementById('manualSP500');
   const fxInput = document.getElementById('manualFX');
+  const pfInput = document.getElementById('manualPortfolio');
   const spVal = parseFloat(spInput ? spInput.value : '');
   const fxVal = parseFloat(fxInput ? fxInput.value : '');
+  const pfVal = parseFloat(pfInput ? pfInput.value : '');
 
-  if (isNaN(spVal) && isNaN(fxVal)) {
+  if (isNaN(spVal) && isNaN(fxVal) && isNaN(pfVal)) {
     setLiveStatus(false, 'Zadej alespoň jednu hodnotu');
     return;
   }
@@ -3896,6 +3926,10 @@ function applyManualData() {
     USDCZK_MONTHLY[month] = fxVal;
     USDCZK_NOW = fxVal;
   }
+  if (!isNaN(pfVal) && pfVal >= 0) {
+    PORTFOLIO_CZK = pfVal;
+    saveSettings();
+  }
 
   try {
     localStorage.setItem('tradestat_mkdata', JSON.stringify({
@@ -3904,11 +3938,16 @@ function applyManualData() {
     }));
   } catch(e) {}
 
-  setLiveStatus(true, 'Aktualizováno ' + dateStr + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2));
+  setLiveStatus(true, 'Aktualizováno ' + dateStr + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2) + (PORTFOLIO_CZK > 0 ? ' · Portfolio: ' + PORTFOLIO_CZK.toLocaleString('cs-CZ') + ' Kč' : ''));
   renderBenchmark();
 }
 
 function loadLiveData() {
+  // Re-load per-user settings (portfolio) — localStorage may have been refreshed by auth
+  loadSettings();
+  const pfEl = document.getElementById('manualPortfolio');
+  if (pfEl && PORTFOLIO_CZK > 0) pfEl.value = PORTFOLIO_CZK;
+
   try {
     const raw = localStorage.getItem('tradestat_mkdata');
     if (raw) {
@@ -3918,7 +3957,7 @@ function loadLiveData() {
       if (d.spPrice) SP500_LIVE_PRICE = d.spPrice;
       if (d.czk) USDCZK_NOW = d.czk;
       if (d.date) {
-        setLiveStatus(true, 'Uloženo ' + d.date + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2));
+        setLiveStatus(true, 'Uloženo ' + d.date + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2) + (PORTFOLIO_CZK > 0 ? ' · Portfolio: ' + PORTFOLIO_CZK.toLocaleString('cs-CZ') + ' Kč' : ''));
         const spEl = document.getElementById('manualSP500');
         const fxEl = document.getElementById('manualFX');
         if (spEl) spEl.value = d.spPrice;
@@ -3928,15 +3967,16 @@ function loadLiveData() {
       }
     }
   } catch(e) {}
-  setLiveStatus(false, 'Zadej aktuální SP500 a USD/CZK kurz a klikni Aktualizovat');
+  setLiveStatus(false, PORTFOLIO_CZK > 0 ? 'Zadej aktuální SP500 a USD/CZK kurz a klikni Aktualizovat' : 'Zadej velikost portfolia v Kč, SP500 a USD/CZK kurz');
   renderBenchmark();
 }
 
 function renderBenchmark() {
   const closed = getClosed();
   const totalUSD = totalPL();
-  const portfolioUSD = PORTFOLIO_CZK / USDCZK_NOW;
-  const myReturnPct = (totalUSD / portfolioUSD) * 100;
+  const hasPortfolio = PORTFOLIO_CZK > 0;
+  const portfolioUSD = hasPortfolio ? (PORTFOLIO_CZK / USDCZK_NOW) : 0;
+  const myReturnPct = hasPortfolio ? (totalUSD / portfolioUSD) * 100 : 0;
 
   const sp500Now = SP500_MONTHLY['2026-04'] || SP500_LIVE_PRICE;
   const sp500Return = (sp500Now - SP500_BASE) / SP500_BASE * 100;
@@ -3948,12 +3988,13 @@ function renderBenchmark() {
   const kEl = document.getElementById('benchmarkKpis');
   if (!kEl) return;
 
+  const DASH = '—';
   kEl.innerHTML = [
-    {label:'Tvůj výnos (USD)', val: fmt$round(totalUSD), sub: myReturnPct.toFixed(1)+'% z portfolia', cls: clr(totalUSD)},
+    {label:'Tvůj výnos (USD)', val: fmt$round(totalUSD), sub: hasPortfolio ? myReturnPct.toFixed(1)+'% z portfolia' : 'nastav portfolio výše', cls: clr(totalUSD)},
     {label:'SP500 od července', val: sp500Return.toFixed(1)+'%', sub: '6 296 → '+sp500Now.toLocaleString('cs-CZ', {maximumFractionDigits:0}), cls: sp500Return > 0 ? 'positive':'negative'},
-    {label:'Alpha (vs SP500)', val: (alpha>=0?'+':'')+alpha.toFixed(1)+'%', sub: alpha >= 0 ? 'Překonáváš trh ✓' : 'Zaostáváš za trhem', cls: alpha >= 0 ? 'positive':'negative'},
-    {label:'P&L v Kč (aktuálně)', val: '+'+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč', sub: 'při kurzu '+USDCZK_NOW+' Kč/USD', cls:'positive'},
-    {label:'Portfolio (Kč)', val: PORTFOLIO_CZK.toLocaleString('cs-CZ')+' Kč', sub: '$'+portfolioUSD.toFixed(0)+' USD', cls:'neutral'},
+    {label:'Alpha (vs SP500)', val: hasPortfolio ? ((alpha>=0?'+':'')+alpha.toFixed(1)+'%') : DASH, sub: hasPortfolio ? (alpha >= 0 ? 'Překonáváš trh ✓' : 'Zaostáváš za trhem') : 'vyžaduje portfolio', cls: hasPortfolio ? (alpha >= 0 ? 'positive':'negative') : 'neutral'},
+    {label:'P&L v Kč (aktuálně)', val: (plCZK>=0?'+':'')+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč', sub: 'při kurzu '+USDCZK_NOW+' Kč/USD', cls: plCZK>=0?'positive':'negative'},
+    {label:'Portfolio (Kč)', val: hasPortfolio ? (PORTFOLIO_CZK.toLocaleString('cs-CZ')+' Kč') : DASH, sub: hasPortfolio ? ('$'+portfolioUSD.toFixed(0)+' USD') : 'zadej hodnotu výše', cls:'neutral'},
     {label:'USD/CZK změna', val: (fxChange>=0?'+':'')+fxChange.toFixed(1)+'%', sub: '21.06 → '+USDCZK_NOW+' Kč/USD', cls: fxChange < 0 ? 'negative':'positive'},
   ].map(k =>
     `<div class="kpi glass">
@@ -4065,15 +4106,19 @@ function renderBenchmark() {
   });
 
   // CZK table
+  const plSign = totalUSD >= 0 ? '+' : '';
+  const plKcSign = plCZK >= 0 ? '+' : '';
+  const plKcJul = totalUSD * 21.057;
+  const plKcJulSign = plKcJul >= 0 ? '+' : '';
   const rows = [
-    ['Portfolio celkem (Kč)', PORTFOLIO_CZK.toLocaleString('cs-CZ')+' Kč'],
-    ['Portfolio celkem (USD)', '$'+(PORTFOLIO_CZK/USDCZK_NOW).toFixed(0)],
+    ['Portfolio celkem (Kč)', hasPortfolio ? (PORTFOLIO_CZK.toLocaleString('cs-CZ')+' Kč') : '— nenastaveno —'],
+    ['Portfolio celkem (USD)', hasPortfolio ? ('$'+(PORTFOLIO_CZK/USDCZK_NOW).toFixed(0)) : '—'],
     ['Aktuální kurz USD/CZK', USDCZK_NOW+' Kč/USD'],
     ['Kurz v červenci 2025', '21.06 Kč/USD'],
-    ['P&L v USD', '+$'+totalUSD.toFixed(2)],
-    ['P&L v Kč (aktuální kurz)', '+'+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč'],
-    ['P&L v Kč (kurz z července)', '+'+Math.round(totalUSD * 21.057).toLocaleString('cs-CZ')+' Kč'],
-    ['Rozdíl vlivem FX', Math.round(plCZK - totalUSD*21.057).toLocaleString('cs-CZ')+' Kč'],
+    ['P&L v USD', plSign+'$'+totalUSD.toFixed(2)],
+    ['P&L v Kč (aktuální kurz)', plKcSign+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč'],
+    ['P&L v Kč (kurz z července)', plKcJulSign+Math.round(plKcJul).toLocaleString('cs-CZ')+' Kč'],
+    ['Rozdíl vlivem FX', Math.round(plCZK - plKcJul).toLocaleString('cs-CZ')+' Kč'],
   ];
   document.getElementById('czkTable').innerHTML = `<div class="stats-list">${rows.map(([l,v]) =>
     `<div class="stats-row"><span class="stats-label">${l}</span><span class="stats-value">${v}</span></div>`
