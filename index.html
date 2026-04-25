@@ -953,7 +953,8 @@ onAuthStateChanged(auth, async (user) => {
       {fb:'trades',   ls:'tradestat_pro_v1'},
       {fb:'goals',    ls:'tradestat_pro_goals_v1'},
       {fb:'journal',  ls:'tradestat_pro_journal_v1'},
-      {fb:'settings', ls:'tradestat_settings_v1'}
+      {fb:'settings', ls:'tradestat_settings_v1'},
+      {fb:'mkdata',   ls:'tradestat_mkdata'}
     ];
 
     window.__userLoggedIn = true;
@@ -3931,12 +3932,14 @@ function applyManualData() {
     saveSettings();
   }
 
+  const mkdata = {
+    sp500: SP500_MONTHLY, fx: USDCZK_MONTHLY,
+    spPrice: SP500_LIVE_PRICE, czk: USDCZK_NOW, date: dateStr
+  };
   try {
-    localStorage.setItem('tradestat_mkdata', JSON.stringify({
-      sp500: SP500_MONTHLY, fx: USDCZK_MONTHLY,
-      spPrice: SP500_LIVE_PRICE, czk: USDCZK_NOW, date: dateStr
-    }));
+    localStorage.setItem('tradestat_mkdata', JSON.stringify(mkdata));
   } catch(e) {}
+  if (window.__fbSave) window.__fbSave('mkdata', mkdata);
 
   setLiveStatus(true, 'Aktualizováno ' + dateStr + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2) + (PORTFOLIO_CZK > 0 ? ' · Portfolio: ' + PORTFOLIO_CZK.toLocaleString('cs-CZ') + ' Kč' : ''));
   renderBenchmark();
