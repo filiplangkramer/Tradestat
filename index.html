@@ -634,6 +634,47 @@ tr:hover td{background:rgba(94,234,212,0.03);}
 .live-mini-btn:hover{border-color:var(--cyan);color:var(--cyan);}
 .live-mini-btn.primary{border-color:var(--cyan);color:var(--cyan);}
 
+/* ─── CHART MODAL (TradingView) ────────────── */
+.chart-modal-overlay{
+  position:fixed;inset:0;background:rgba(7,9,18,0.85);
+  display:none;align-items:center;justify-content:center;
+  z-index:1000;padding:20px;backdrop-filter:blur(8px);
+}
+.chart-modal{
+  background:var(--bg-1);border:1px solid var(--border-strong);
+  border-radius:16px;width:100%;max-width:1400px;height:85vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:var(--shadow-2);
+}
+.chart-modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  background:var(--glass);
+}
+.chart-modal-title{display:flex;align-items:center;gap:12px;}
+.chart-modal-title .tv-symbol{
+  font-family:var(--fira);font-size:13px;color:var(--cyan);
+  padding:3px 8px;background:var(--win-soft);border-radius:4px;
+}
+.chart-modal-title h3{font-size:18px;font-weight:600;}
+.chart-modal-close{
+  background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);width:32px;height:32px;border-radius:8px;
+  cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.chart-modal-close:hover{border-color:var(--loss);color:var(--loss);}
+.chart-modal-body{flex:1;position:relative;background:#131722;}
+.chart-modal-body iframe{width:100%;height:100%;border:0;}
+.chart-modal-info{
+  padding:10px 20px;border-top:1px solid var(--border);
+  display:flex;gap:18px;font-size:12px;color:var(--text-dim);
+  font-family:var(--fira);flex-wrap:wrap;
+}
+.chart-modal-info b{color:var(--text);font-weight:600;}
+.act-btn.chart{background:var(--win-soft);color:var(--win);border-color:transparent;}
+.act-btn.chart:hover{background:rgba(52,211,153,0.22);}
+
 /* ─── GOAL CARDS ────────────────────────────── */
 .goal-card{padding:22px;margin-bottom:14px;transition:all .25s;}
 .goal-card:hover{border-color:var(--border-strong);}
@@ -1823,6 +1864,25 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
+<!--    TRADINGVIEW CHART MODAL                           -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="chartModalOverlay" class="chart-modal-overlay" onclick="if(event.target===this)closeChartModal()">
+  <div class="chart-modal">
+    <div class="chart-modal-head">
+      <div class="chart-modal-title">
+        <h3 id="chartModalStock">—</h3>
+        <span class="tv-symbol" id="chartModalSymbol">—</span>
+      </div>
+      <button class="chart-modal-close" onclick="closeChartModal()" title="Zavřít (Esc)">×</button>
+    </div>
+    <div class="chart-modal-body">
+      <iframe id="chartModalFrame" src="about:blank" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
+    </div>
+    <div class="chart-modal-info" id="chartModalInfo"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
 <!--    LIVE PRICES SETTINGS MODAL                        -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="liveSettingsOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeLiveSettings()">
@@ -2559,6 +2619,97 @@ function clearLiveKey() {
   window.LivePrices.setKey('');
   document.getElementById('ls_apikey').value = '';
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRADINGVIEW CHART MODAL — full-featured charts for any position
+   ═══════════════════════════════════════════════════════════════════ */
+const TV_CRYPTO = {
+  bitcoin: "BINANCE:BTCUSDT",
+  ethereum: "BINANCE:ETHUSDT",
+  solana: "BINANCE:SOLUSDT",
+  binancecoin: "BINANCE:BNBUSDT",
+  ripple: "BINANCE:XRPUSDT",
+  aave: "BINANCE:AAVEUSDT",
+  cardano: "BINANCE:ADAUSDT",
+  dogecoin: "BINANCE:DOGEUSDT",
+};
+
+function resolveTVSymbol(t) {
+  if (!t) return null;
+  const sym = window.LivePrices ? window.LivePrices.resolveSymbol(t) : null;
+  if (sym) {
+    if (sym.kind === 'crypto') return TV_CRYPTO[sym.id] || ('BINANCE:' + sym.id.toUpperCase() + 'USDT');
+    return sym.id; // TradingView resolves stock tickers automatically
+  }
+  // Fallback: use ticker field or stock name as-is
+  if (t.ticker) return t.ticker.toUpperCase();
+  return null;
+}
+
+function openChartModal(id) {
+  const t = trades.find(x => x.id === id);
+  if (!t) return;
+  const tvSymbol = resolveTVSymbol(t);
+  if (!tvSymbol) {
+    alert('Pro tento trade neznám ticker. Otevři ✎ Upravit a zadej ticker (např. AAPL, BTC).');
+    return;
+  }
+
+  document.getElementById('chartModalStock').textContent = t.stock;
+  document.getElementById('chartModalSymbol').textContent = tvSymbol;
+
+  const params = new URLSearchParams({
+    symbol: tvSymbol,
+    interval: 'D',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    toolbar_bg: '#131722',
+    withdateranges: '1',
+    hide_side_toolbar: '0',
+    allow_symbol_change: '1',
+    save_image: '1',
+    studies: '[]',
+    hideideas: '1',
+    timezone: 'Europe/Prague',
+  });
+  document.getElementById('chartModalFrame').src =
+    'https://s.tradingview.com/widgetembed/?' + params.toString();
+
+  // Position summary
+  const q = window.LivePrices ? window.LivePrices.getQuote(t) : null;
+  const units = t.units || (t.invested && t.open_price ? t.invested / t.open_price : null);
+  const lines = [
+    `Vstup: <b>$${t.open_price ?? '—'}</b>`,
+    `Investice: <b>$${(t.invested||0).toFixed(2)}</b>`,
+    units ? `Kusů: <b>${units.toFixed(units < 1 ? 4 : 2)}</b>` : null,
+    `Otevřeno: <b>${fmtDate(t.open_date)}</b>`,
+  ];
+  if (q && t.open_price && units) {
+    const unrPL = (q.price - t.open_price) * units;
+    const unrPct = ((q.price - t.open_price) / t.open_price) * 100;
+    const cls = unrPL >= 0 ? 'var(--win)' : 'var(--loss)';
+    lines.push(`Aktuální: <b style="color:${cls}">$${fmtPrice(q.price)}</b>`);
+    lines.push(`Unrealized: <b style="color:${cls}">${unrPL >= 0 ? '+' : ''}$${unrPL.toFixed(2)} (${unrPct >= 0 ? '+' : ''}${unrPct.toFixed(2)}%)</b>`);
+  }
+  document.getElementById('chartModalInfo').innerHTML = lines.filter(Boolean).join(' · ');
+
+  document.getElementById('chartModalOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeChartModal() {
+  document.getElementById('chartModalOverlay').style.display = 'none';
+  document.getElementById('chartModalFrame').src = 'about:blank';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const ov = document.getElementById('chartModalOverlay');
+    if (ov && ov.style.display === 'flex') closeChartModal();
+  }
+});
 
 /* ═══════════════════════════════════════════════════════════════════
    COMPUTED HELPERS
@@ -3837,6 +3988,7 @@ function renderOpenCard(t, LP) {
         <div class="open-inv">$${(t.invested||0).toFixed(0)}</div>
         ${unrealHTML}
         <div class="open-actions">
+          <button class="act-btn chart" onclick="openChartModal('${t.id}')" title="Graf (TradingView)">📊</button>
           <button class="act-btn" onclick="openEditModal('${t.id}')">✎</button>
           <button class="act-btn primary" onclick="openCloseModal('${t.id}')">Zavřít</button>
           <button class="act-btn del" onclick="deleteTrade('${t.id}')">×</button>
