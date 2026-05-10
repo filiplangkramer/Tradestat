@@ -566,53 +566,130 @@ tr:hover td{background:rgba(94,234,212,0.03);}
 .modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
 .modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end;}
 
-/* ─── OPEN POSITION CARDS ───────────────────── */
+/* ─── OPEN POSITION CARDS — redesigned ─────────── */
 .open-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-  gap:12px;margin-bottom:16px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:14px;margin-bottom:16px;
 }
 .open-card{
-  background:var(--glass-light);border:1px solid var(--border);
-  border-radius:12px;padding:16px;
-  display:flex;gap:14px;align-items:center;
-  transition:all .25s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(160deg, rgba(25,32,58,0.55), rgba(15,20,38,0.55));
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:0;
+  display:flex;flex-direction:column;
   position:relative;overflow:hidden;
+  transition:all .28s cubic-bezier(.4,0,.2,1);
 }
 .open-card::before{
-  content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
-  background:linear-gradient(180deg, var(--blue), var(--violet));
-  opacity:0.7;
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, var(--cyan), var(--violet) 60%, transparent);
+  opacity:0.55;transition:opacity .28s;
 }
-.open-card:hover{transform:translateY(-2px);border-color:var(--border-strong);box-shadow:var(--shadow-1);}
-.open-logo{flex-shrink:0;}
-.open-main{flex:1;min-width:0;}
-.open-stock{
-  font-size:15px;font-weight:600;margin-bottom:2px;letter-spacing:-0.01em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+.open-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(94,234,212,0.35);
+  box-shadow:0 12px 32px rgba(0,0,0,0.35), 0 0 24px rgba(94,234,212,0.06);
 }
-.open-sector{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;}
-.open-meta{font-size:11px;color:var(--text-dim);margin-top:6px;font-family:var(--fira);}
-.open-right{text-align:right;}
-.open-inv{font-family:var(--fira);font-size:15px;font-weight:600;color:var(--cyan);}
-.open-actions{display:flex;gap:4px;margin-top:8px;justify-content:flex-end;}
+.open-card:hover::before{opacity:1;}
 
-/* ─── LIVE PRICE UI ────────────────────────────── */
-.open-grid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));}
-.live-row{
-  margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);
-  display:flex;align-items:center;gap:8px;
+/* — Header: logo + name + invested — */
+.oc-head{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:14px 14px 10px;
 }
-.live-price{font-family:var(--fira);font-size:13px;font-weight:600;color:var(--text);}
-.live-pct{font-family:var(--fira);font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;}
-.live-pct.up{color:var(--win);background:var(--win-soft);}
-.live-pct.down{color:var(--loss);background:var(--loss-soft);}
-.live-pct.flat{color:var(--muted);background:var(--glass-light);}
-.live-spark{flex:1;height:24px;min-width:60px;}
+.oc-head .open-logo{flex-shrink:0;}
+.oc-name{flex:1;min-width:0;}
+.oc-stock{
+  font-size:15px;font-weight:600;letter-spacing:-0.01em;
+  line-height:1.25;color:var(--text);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.oc-stock .oc-ticker{
+  color:var(--cyan);font-family:var(--fira);font-size:10px;font-weight:600;
+  background:var(--win-soft);padding:1px 6px;border-radius:4px;letter-spacing:0.04em;
+}
+.oc-sector{
+  font-size:9px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.16em;font-weight:600;margin-top:4px;
+}
+.oc-inv{text-align:right;flex-shrink:0;}
+.oc-inv-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;font-weight:600;}
+.oc-inv-val{font-family:var(--fira);font-size:16px;font-weight:700;color:var(--cyan);margin-top:1px;}
+
+/* — Entry meta row — */
+.oc-entry{
+  padding:0 14px 10px;
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--text-dim);font-family:var(--fira);
+}
+.oc-entry .oc-date{color:var(--cyan);font-weight:600;}
+.oc-entry .oc-dot{color:var(--muted-2);}
+.oc-entry b{color:var(--text);font-weight:600;}
+.oc-note{
+  padding:0 14px 8px;
+  font-size:10px;color:var(--text-dim);font-style:italic;
+  line-height:1.4;
+}
+
+/* — Live price block — */
+.oc-live{
+  padding:12px 14px;
+  background:rgba(0,0,0,0.22);
+  border-top:1px solid var(--border);
+  display:grid;grid-template-columns:1fr 95px;gap:10px;align-items:center;
+}
+.oc-live-left{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.oc-live-price{
+  font-family:var(--fira);font-size:18px;font-weight:700;color:var(--text);
+  letter-spacing:-0.01em;
+}
+.oc-live-day{
+  font-family:var(--fira);font-size:10px;font-weight:600;
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 6px;border-radius:4px;width:fit-content;
+}
+.oc-live-day.up{color:var(--win);background:var(--win-soft);}
+.oc-live-day.down{color:var(--loss);background:var(--loss-soft);}
+.oc-live-day.flat{color:var(--muted);background:var(--glass-light);}
+.oc-spark-wrap{height:38px;width:100%;display:flex;align-items:center;}
+.oc-spark-wrap .live-spark{height:38px;width:100%;}
 .live-stale{color:var(--muted);font-family:var(--fira);font-size:10px;font-style:italic;}
-.open-unreal{font-family:var(--fira);font-size:12px;margin-top:4px;font-weight:600;}
-.open-unreal.up{color:var(--win);}
-.open-unreal.down{color:var(--loss);}
-.open-unreal.flat{color:var(--muted);}
+.oc-live-off{
+  padding:10px 14px;font-family:var(--fira);font-size:10px;
+  color:var(--muted);text-align:center;font-style:italic;
+  border-top:1px dashed var(--border);
+}
+.oc-warn{
+  padding:8px 14px;font-size:10px;color:var(--amber);
+  background:rgba(251,191,36,0.05);
+  border-top:1px solid rgba(251,191,36,0.12);
+  display:flex;align-items:center;gap:6px;
+}
+
+/* — P/L block — */
+.oc-pl{
+  padding:11px 14px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border);
+}
+.oc-pl-label{
+  font-size:9px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.14em;font-weight:600;
+}
+.oc-pl-right{text-align:right;font-family:var(--fira);}
+.oc-pl-val{font-size:16px;font-weight:700;letter-spacing:-0.01em;}
+.oc-pl-val.up{color:var(--win);}
+.oc-pl-val.down{color:var(--loss);}
+.oc-pl-val.flat{color:var(--muted);}
+.oc-pl-pct{font-size:11px;opacity:0.85;margin-top:1px;}
+
+/* — Action row — */
+.oc-actions{
+  display:flex;gap:6px;padding:10px 12px 12px;
+  justify-content:space-between;align-items:center;
+  border-top:1px dashed var(--border);
+}
+.oc-actions .act-grp{display:flex;gap:5px;}
 .live-bar{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:10px 14px;margin-bottom:14px;border-radius:10px;
@@ -4117,53 +4194,77 @@ function renderOpenCard(t, LP) {
   const q = LP ? LP.getQuote(t) : null;
   const sp = LP ? LP.getSpark(t) : null;
   const sym = LP ? LP.resolveSymbol(t) : null;
+  const enabled = LP && LP.getState().enabled;
 
-  let liveRow = '';
-  let unrealHTML = '';
-  if (LP && LP.getState().enabled) {
+  // Live price block
+  let liveBlock = '';
+  let plBlock = '';
+  if (enabled) {
     if (!sym) {
-      liveRow = `<div class="live-row"><span class="live-stale">⚠ chybí ticker (uprav trade)</span></div>`;
+      liveBlock = `<div class="oc-warn">⚠ Chybí ticker — klikni ✎ Upravit a doplň (např. AAPL)</div>`;
     } else if (q) {
       const dir = q.changePct > 0.01 ? 'up' : q.changePct < -0.01 ? 'down' : 'flat';
-      const arrow = dir === 'up' ? '↗' : dir === 'down' ? '↘' : '→';
-      const sparkSVG = sp ? LP.renderSparkSVG(sp.points, dir !== 'down') : '<span class="live-stale">·</span>';
-      liveRow = `
-        <div class="live-row">
-          <span class="live-price">$${fmtPrice(q.price)}</span>
-          <span class="live-pct ${dir}">${arrow} ${q.changePct >= 0 ? '+' : ''}${q.changePct.toFixed(2)}%</span>
-          ${sparkSVG}
+      const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '→';
+      const sparkSVG = sp ? LP.renderSparkSVG(sp.points, dir !== 'down') : '';
+      liveBlock = `
+        <div class="oc-live">
+          <div class="oc-live-left">
+            <span class="oc-live-price">$${fmtPrice(q.price)}</span>
+            <span class="oc-live-day ${dir}">${arrow} ${q.changePct >= 0 ? '+' : ''}${q.changePct.toFixed(2)}%</span>
+          </div>
+          <div class="oc-spark-wrap">${sparkSVG || '<span class="live-stale">—</span>'}</div>
         </div>`;
       if (t.open_price && t.invested) {
         const units = t.units || (t.invested / t.open_price);
         const unrPL = (q.price - t.open_price) * units;
         const unrPct = ((q.price - t.open_price) / t.open_price) * 100;
         const cls = unrPL > 0.01 ? 'up' : unrPL < -0.01 ? 'down' : 'flat';
-        unrealHTML = `<div class="open-unreal ${cls}">${unrPL >= 0 ? '+' : ''}$${unrPL.toFixed(2)} · ${unrPct >= 0 ? '+' : ''}${unrPct.toFixed(2)}%</div>`;
+        plBlock = `
+          <div class="oc-pl">
+            <span class="oc-pl-label">Unrealized P/L</span>
+            <div class="oc-pl-right">
+              <div class="oc-pl-val ${cls}">${unrPL >= 0 ? '+' : ''}$${unrPL.toFixed(2)}</div>
+              <div class="oc-pl-pct ${cls}">${unrPct >= 0 ? '+' : ''}${unrPct.toFixed(2)}%</div>
+            </div>
+          </div>`;
       }
     } else {
-      liveRow = `<div class="live-row"><span class="live-stale">načítám…</span></div>`;
+      liveBlock = `<div class="oc-live-off">načítám aktuální cenu…</div>`;
     }
+  } else {
+    liveBlock = `<div class="oc-live-off">live ceny vypnuty</div>`;
   }
+
+  const tickerBadge = sym ? `<span class="oc-ticker">${sym.id}</span>` : '';
 
   return `
     <div class="open-card">
-      <div class="open-logo">${logoImg(t.stock, 36)}</div>
-      <div class="open-main">
-        <div class="open-stock">${t.stock}${sym ? ` <span style="color:var(--muted);font-size:10px;font-family:var(--fira)">${sym.id}</span>` : ''}</div>
-        <div class="open-sector">${t.sector}</div>
-        <div class="open-meta"><span style="color:var(--cyan);font-weight:600;font-family:var(--fira);font-size:11px">${fmtDate(t.open_date)}</span> · vstup $${t.open_price || '?'}</div>
-        ${t.notes ? `<div class="open-meta" style="font-size:10px;margin-top:2px;font-style:italic">${t.notes}</div>` : ''}
-        ${liveRow}
-      </div>
-      <div class="open-right">
-        <div class="open-inv">$${(t.invested||0).toFixed(0)}</div>
-        ${unrealHTML}
-        <div class="open-actions">
-          <button class="act-btn chart" onclick="openChartModal('${t.id}')" title="Graf (TradingView)">📊</button>
-          <button class="act-btn" onclick="openEditModal('${t.id}')">✎</button>
-          <button class="act-btn primary" onclick="openCloseModal('${t.id}')">Zavřít</button>
-          <button class="act-btn del" onclick="deleteTrade('${t.id}')">×</button>
+      <div class="oc-head">
+        <div class="open-logo">${logoImg(t.stock, 40)}</div>
+        <div class="oc-name">
+          <div class="oc-stock">${t.stock}${tickerBadge}</div>
+          <div class="oc-sector">${t.sector}</div>
         </div>
+        <div class="oc-inv">
+          <div class="oc-inv-label">Investice</div>
+          <div class="oc-inv-val">$${(t.invested||0).toFixed(0)}</div>
+        </div>
+      </div>
+      <div class="oc-entry">
+        <span class="oc-date">${fmtDate(t.open_date)}</span>
+        <span class="oc-dot">·</span>
+        <span>vstup <b>$${t.open_price || '?'}</b></span>
+      </div>
+      ${t.notes ? `<div class="oc-note">"${t.notes}"</div>` : ''}
+      ${liveBlock}
+      ${plBlock}
+      <div class="oc-actions">
+        <div class="act-grp">
+          <button class="act-btn chart" onclick="openChartModal('${t.id}')" title="Graf s entry linkou">📊</button>
+          <button class="act-btn" onclick="openEditModal('${t.id}')" title="Upravit">✎</button>
+          <button class="act-btn del" onclick="deleteTrade('${t.id}')" title="Smazat">×</button>
+        </div>
+        <button class="act-btn primary" onclick="openCloseModal('${t.id}')">Zavřít pozici</button>
       </div>
     </div>`;
 }
