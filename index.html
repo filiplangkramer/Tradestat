@@ -3198,10 +3198,36 @@ function fmtPct(v) {
 }
 function clr(v) { return v > 0 ? 'positive' : v < 0 ? 'negative' : ''; }
 
+/* Multi-step logo fallback: Clearbit → Google Favicons → letter */
+window.__logoFail = function(img, stock, size, domain) {
+  const step = parseInt(img.dataset.lstep || '0', 10);
+  if (step === 0 && domain) {
+    img.dataset.lstep = '1';
+    img.src = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128';
+    return;
+  }
+  if (step === 1 && domain) {
+    img.dataset.lstep = '2';
+    img.src = 'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(domain) + '.ico';
+    return;
+  }
+  const f = Math.round(size * 0.45);
+  const ch = (stock || '?').charAt(0).toUpperCase();
+  img.outerHTML = '<span class="logo-fallback" style="width:' + size + 'px;height:' + size +
+                  'px;font-size:' + f + 'px">' + ch + '</span>';
+};
+
 function logoImg(stock, size=24) {
   const url = LOGOS[stock];
-  if (!url) return `<span class="logo-fallback" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px">${stock.charAt(0)}</span>`;
-  return `<img src="${url}" class="logo-chip" style="width:${size}px;height:${size}px" onerror="this.outerHTML='<span class=\\'logo-fallback\\' style=\\'width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px\\'>${stock.charAt(0)}</span>'" loading="lazy" alt="">`;
+  if (!url) {
+    return `<span class="logo-fallback" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.45)}px">${stock.charAt(0)}</span>`;
+  }
+  // Extract domain for fallback chain
+  let domain = '';
+  const m = url.match(/clearbit\.com\/([^/?#]+)/);
+  if (m) domain = m[1];
+  const safeStock = (stock || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return `<img src="${url}" class="logo-chip" style="width:${size}px;height:${size}px" onerror="__logoFail(this, '${safeStock}', ${size}, '${domain}')" loading="lazy" alt="">`;
 }
 
 function getScreenshot(stock, customUrl) {
