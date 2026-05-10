@@ -1708,11 +1708,17 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
   <div class="kpi-grid" id="benchmarkKpis"></div>
 
   <div class="big-card glass">
-    <div class="card-head">
-      <div class="card-title"><span class="dot"></span>Equity vs SP500 · od července 2025</div>
-      <div class="card-sub">Indexováno na 100</div>
+    <div class="card-head" style="flex-wrap:wrap;gap:10px">
+      <div class="card-title"><span class="dot"></span>Equity vs SP500 — denní</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="bmRangeBtns">
+        <button class="live-mini-btn" data-bmrange="30">1M</button>
+        <button class="live-mini-btn" data-bmrange="90">3M</button>
+        <button class="live-mini-btn" data-bmrange="180">6M</button>
+        <button class="live-mini-btn primary" data-bmrange="all">Vše</button>
+      </div>
+      <div class="card-sub" id="bmChartSub">Indexováno na 100 · zelená plocha = předbíháš trh, červená = zaostáváš</div>
     </div>
-    <div class="chart-wrap" style="height:260px"><canvas id="benchmarkChart"></canvas></div>
+    <div class="chart-wrap" style="height:320px"><canvas id="benchmarkChart"></canvas></div>
   </div>
 
   <div class="two-col">
@@ -4886,6 +4892,8 @@ const USDCZK_FALLBACK = {
 };
 
 let SP500_MONTHLY = {...SP500_FALLBACK};
+let SP500_DAILY = {};            // {YYYY-MM-DD: close} from TwelveData
+let USDCZK_DAILY = {};           // {YYYY-MM-DD: rate} from Frankfurter
 let USDCZK_MONTHLY = {...USDCZK_FALLBACK};
 let USDCZK_NOW = 21.21;
 let USDCZK_PREV = 21.21;          // yesterday's close — for daily change
@@ -4963,21 +4971,44 @@ async function fetchFXLive() {
 }
 
 async function fetchFXHistory() {
-  // Monthly USD/CZK from 2025-07 to now — for chart
+  // Daily USD/CZK from 2025-07 to now — for daily curve + monthly aggregation
   try {
     const today = new Date().toISOString().slice(0, 10);
     const r = await fetch(`https://api.frankfurter.app/2025-07-01..${today}?from=USD&to=CZK`);
     if (!r.ok) throw new Error('Frankfurter hist ' + r.status);
     const d = await r.json();
     if (!d.rates) throw new Error('No rates');
-    // Get last available date of each month
+    USDCZK_DAILY = {};
     const byMonth = {};
     Object.keys(d.rates).sort().forEach(date => {
+      USDCZK_DAILY[date] = d.rates[date].CZK;
       const ym = date.slice(0, 7);
-      byMonth[ym] = d.rates[date].CZK; // overwrite → ends up with latest of month
+      byMonth[ym] = d.rates[date].CZK; // last day of each month wins
     });
     Object.assign(USDCZK_MONTHLY, byMonth);
     return Object.keys(byMonth).length;
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function fetchSP500Daily(tdKey) {
+  if (!tdKey) return 0;
+  try {
+    // ~300 trading days back — covers from before July 2025 to today
+    const r = await fetch(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=400&apikey=${encodeURIComponent(tdKey)}`);
+    if (!r.ok) throw new Error('TD daily ' + r.status);
+    const d = await r.json();
+    if (d.status === 'error' || !Array.isArray(d.values)) throw new Error('Bad daily');
+    SP500_DAILY = {};
+    d.values.forEach(v => {
+      const close = parseFloat(v.close);
+      const ymd = v.datetime.slice(0, 10);
+      if (!isNaN(close) && ymd >= '2025-07-01') {
+        SP500_DAILY[ymd] = close;
+      }
+    });
+    return Object.keys(SP500_DAILY).length;
   } catch (e) {
     return 0;
   }
@@ -5046,6 +5077,7 @@ async function refreshBenchmark(opts) {
     if (sp.error) errors.push('SP500: ' + sp.error);
     else sources.push('TwelveData');
     await fetchSP500History(tdKey);
+    await fetchSP500Daily(tdKey);
   } else {
     errors.push('SP500: chybí Twelve Data klíč (přidej v ⚙ Live ceny)');
   }
@@ -5054,7 +5086,8 @@ async function refreshBenchmark(opts) {
   BENCH_LAST_SOURCE = sources.join(' · ') || '—';
 
   const mkdata = {
-    sp500: SP500_MONTHLY, fx: USDCZK_MONTHLY,
+    sp500: SP500_MONTHLY, sp500Daily: SP500_DAILY,
+    fx: USDCZK_MONTHLY, fxDaily: USDCZK_DAILY,
     spPrice: SP500_LIVE_PRICE, czk: USDCZK_NOW,
     spDayPct: SP500_DAY_CHG_PCT, fxDayPct: FX_DAY_CHG_PCT,
     ts: BENCH_LAST_UPDATE.getTime(), source: BENCH_LAST_SOURCE,
@@ -5146,7 +5179,9 @@ function loadLiveData() {
     if (raw) {
       const d = JSON.parse(raw);
       if (d.sp500) SP500_MONTHLY = Object.assign({}, SP500_FALLBACK, d.sp500);
+      if (d.sp500Daily && typeof d.sp500Daily === 'object') SP500_DAILY = d.sp500Daily;
       if (d.fx) USDCZK_MONTHLY = Object.assign({}, USDCZK_FALLBACK, d.fx);
+      if (d.fxDaily && typeof d.fxDaily === 'object') USDCZK_DAILY = d.fxDaily;
       if (d.spPrice) SP500_LIVE_PRICE = d.spPrice;
       if (d.czk) USDCZK_NOW = d.czk;
       if (typeof d.spDayPct === 'number') SP500_DAY_CHG_PCT = d.spDayPct;
@@ -5297,18 +5332,98 @@ function renderBenchmark() {
 
   destroyChart('bm'); destroyChart('bmm'); destroyChart('fx');
 
+  // ─── Build DAILY equity vs SP500 series ───
+  const spDailyDates = Object.keys(SP500_DAILY).sort();
+  let dLabels = [], dMyIdx = [], dSpIdx = [];
+
+  if (spDailyDates.length > 1 && hasPortfolio) {
+    // Daily realized P&L map
+    const dailyPL = {};
+    closed.forEach(t => { if (t.close_date) dailyPL[t.close_date] = (dailyPL[t.close_date] || 0) + t.pl; });
+
+    // Apply selected range
+    const sel = (window.__bmRange || 'all');
+    let firstIdx = 0;
+    if (sel !== 'all') {
+      const days = parseInt(sel, 10);
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+      const ymd = cutoff.toISOString().slice(0,10);
+      firstIdx = spDailyDates.findIndex(d => d >= ymd);
+      if (firstIdx < 0) firstIdx = 0;
+    }
+    const dates = spDailyDates.slice(firstIdx);
+    if (dates.length > 1) {
+      const spBase = SP500_DAILY[dates[0]];
+      // Cumulative P&L UP TO start (so chart starts at proper baseline)
+      let myCumPriorUSD = 0;
+      Object.keys(dailyPL).forEach(d => { if (d < dates[0]) myCumPriorUSD += dailyPL[d]; });
+      let myCum = myCumPriorUSD;
+      const startEquity = portfolioUSD + myCumPriorUSD;
+
+      dates.forEach(d => {
+        if (dailyPL[d]) myCum += dailyPL[d];
+        dLabels.push(d);
+        const myEquity = portfolioUSD + myCum;
+        const myI = (myEquity / startEquity) * 100;
+        const spI = (SP500_DAILY[d] / spBase) * 100;
+        dMyIdx.push(+myI.toFixed(3));
+        dSpIdx.push(+spI.toFixed(3));
+      });
+    }
+  }
+
+  // Fallback to monthly if daily not available
+  if (dLabels.length < 2) {
+    dLabels = labels;
+    dMyIdx = myIdx;
+    dSpIdx = sp500Idx;
+  }
+
   const ctx = document.getElementById('benchmarkChart').getContext('2d');
-  const myGrad = ctx.createLinearGradient(0,0,0,260);
-  myGrad.addColorStop(0,'rgba(94,234,212,0.3)');
+  const myGrad = ctx.createLinearGradient(0,0,0,320);
+  myGrad.addColorStop(0,'rgba(94,234,212,0.18)');
   myGrad.addColorStop(1,'rgba(94,234,212,0)');
+
+  // Format X-axis labels: show month name only periodically
+  const formatLabel = (d) => {
+    const [y,m,day] = d.split('-');
+    const names = ['Led','Úno','Bře','Dub','Kvě','Čer','Čvc','Srp','Zář','Říj','Lis','Pro'];
+    return names[parseInt(m,10)-1] + ' ' + y.slice(2);
+  };
 
   charts['bm'] = new Chart(ctx, {
     type:'line',
     data:{
-      labels,
+      labels: dLabels,
       datasets:[
-        {label:'Tvoje portfolio',data:myIdx,borderColor:'#5eead4',backgroundColor:myGrad,borderWidth:2.5,fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:'#5eead4',pointHoverRadius:6},
-        {label:'S&P 500',data:sp500Idx,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,0.05)',borderWidth:2,fill:false,tension:0.3,pointRadius:4,pointBackgroundColor:'#a78bfa',pointHoverRadius:6},
+        {
+          label:'Tvoje portfolio',
+          data: dMyIdx,
+          borderColor:'#5eead4',
+          backgroundColor:'rgba(94,234,212,0.18)',
+          borderWidth:2.5,
+          fill: { target: 1, above: 'rgba(52,211,153,0.18)', below: 'rgba(251,113,133,0.18)' },
+          tension: 0.18,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#5eead4',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+        },
+        {
+          label:'S&P 500',
+          data: dSpIdx,
+          borderColor:'#a78bfa',
+          backgroundColor: 'rgba(167,139,250,0.05)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.18,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#a78bfa',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+        },
       ]
     },
     options:{
@@ -5316,14 +5431,51 @@ function renderBenchmark() {
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:true,labels:{color:'#9aa4c2',font:{size:11},boxWidth:12,padding:14}},
-        tooltip:{...CHART_TOOLTIP, callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}`}}
+        tooltip:{
+          ...CHART_TOOLTIP,
+          callbacks:{
+            title: (items) => items.length ? items[0].label : '',
+            label: (c) => ` ${c.dataset.label}: ${c.parsed.y.toFixed(2)}`,
+            afterBody: (items) => {
+              if (items.length < 2) return '';
+              const my = items[0].parsed.y, sp = items[1].parsed.y;
+              const alpha = my - sp;
+              return ['', `Alpha: ${alpha >= 0 ? '+' : ''}${alpha.toFixed(2)} bodů`];
+            }
+          }
+        }
       },
       scales:{
-        x:{grid:{color:CHART_AXIS.color},ticks:{...CHART_TICK,maxRotation:45}},
-        y:{grid:{color:CHART_AXIS.color},ticks:{...CHART_TICK,callback:v=>v.toFixed(0)},title:{display:true,text:'Index (start = 100)',color:'#5b6584'}}
+        x:{
+          grid:{color:CHART_AXIS.color, display: false},
+          ticks:{...CHART_TICK, maxRotation:0, autoSkip: true, maxTicksLimit: 8, callback: function(idx) { return formatLabel(this.getLabelForValue(idx)); }}
+        },
+        y:{
+          grid:{color:CHART_AXIS.color},
+          ticks:{...CHART_TICK,callback:v=>v.toFixed(0)},
+          title:{display:true,text:'Index (start = 100)',color:'#5b6584'}
+        }
       }
     }
   });
+
+  // Wire range buttons (re-render chart on click)
+  document.querySelectorAll('#bmRangeBtns button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#bmRangeBtns button').forEach(b => b.classList.remove('primary'));
+      btn.classList.add('primary');
+      window.__bmRange = btn.dataset.bmrange;
+      renderBenchmark();
+    };
+  });
+  // Show current range subtitle
+  const subEl = document.getElementById('bmChartSub');
+  if (subEl) {
+    const rangeText = (window.__bmRange === 'all' || !window.__bmRange)
+      ? `${dLabels.length} dní · indexováno na 100`
+      : `posledních ${window.__bmRange} dní · indexováno na 100`;
+    subEl.textContent = rangeText + ' · zelená plocha = předbíháš trh, červená = zaostáváš';
+  }
 
   charts['bmm'] = new Chart(document.getElementById('benchmarkMonthlyChart'), {
     type:'bar',
