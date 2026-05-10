@@ -1664,31 +1664,45 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
 <!--    BENCHMARK                                         -->
 <!-- ═══════════════════════════════════════════════════ -->
 <section class="section" id="tab-benchmark">
-  <div class="card glass" style="margin-bottom:18px;padding:18px;">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+  <!-- LIVE STATUS BAR -->
+  <div class="card glass" style="margin-bottom:18px;padding:16px 20px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div class="status-indicator">
         <div class="status-dot" id="liveStatusDot"></div>
-        <span id="liveStatusText">Zadej aktuální hodnoty →</span>
+        <span id="liveStatusText" style="font-size:12px">Načítám tržní data…</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;">
+
+      <!-- Live pills with current values -->
+      <div id="bmLivePills" style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto"></div>
+
+      <div style="display:flex;align-items:center;gap:8px;">
         <div style="display:flex;align-items:center;gap:6px;">
-          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;">SP500</label>
-          <input id="manualSP500" type="number" step="any" placeholder="6635"
-            style="width:100px;background:var(--glass-light);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-family:var(--fira);font-size:12px;outline:none">
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;">USD/CZK</label>
-          <input id="manualFX" type="number" step="any" placeholder="21.21"
-            style="width:90px;background:var(--glass-light);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-family:var(--fira);font-size:12px;outline:none">
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:600;">Portfolio (Kč)</label>
+          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;font-weight:600;">Portfolio (Kč)</label>
           <input id="manualPortfolio" type="number" step="any" placeholder="— nezadáno —"
             style="width:130px;background:var(--glass-light);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-family:var(--fira);font-size:12px;outline:none">
         </div>
-        <button class="btn btn-primary" style="padding:8px 16px;font-size:12px" onclick="applyManualData()">Aktualizovat</button>
+        <button class="btn btn-secondary" style="padding:8px 12px;font-size:12px" onclick="saveBenchmarkPortfolio()">Uložit</button>
+        <button class="btn btn-primary" style="padding:8px 14px;font-size:12px" onclick="refreshBenchmark()">🔄 Aktualizovat</button>
       </div>
     </div>
+
+    <!-- Collapsible manual override -->
+    <details style="margin-top:12px;font-size:11px;color:var(--text-dim)">
+      <summary style="cursor:pointer;user-select:none;color:var(--muted);font-family:var(--fira);font-size:11px">Manuální override (pokud auto-fetch selže)</summary>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px;background:var(--glass-light);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;font-weight:600;">SP500</label>
+          <input id="manualSP500" type="number" step="any" placeholder="6635"
+            style="width:100px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:var(--fira);font-size:12px;outline:none">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;font-weight:600;">USD/CZK</label>
+          <input id="manualFX" type="number" step="any" placeholder="21.21"
+            style="width:90px;background:rgba(0,0,0,0.25);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-family:var(--fira);font-size:12px;outline:none">
+        </div>
+        <button class="btn btn-secondary" style="padding:7px 12px;font-size:11px" onclick="applyManualData()">Aplikovat</button>
+      </div>
+    </details>
   </div>
 
   <div class="kpi-grid" id="benchmarkKpis"></div>
@@ -4874,7 +4888,14 @@ const USDCZK_FALLBACK = {
 let SP500_MONTHLY = {...SP500_FALLBACK};
 let USDCZK_MONTHLY = {...USDCZK_FALLBACK};
 let USDCZK_NOW = 21.21;
+let USDCZK_PREV = 21.21;          // yesterday's close — for daily change
 let SP500_LIVE_PRICE = 6635.86;
+let SP500_PREV = 6635.86;         // yesterday's close
+let SP500_DAY_CHG_PCT = 0;        // today's daily change %
+let FX_DAY_CHG_PCT = 0;           // today's USD/CZK daily change %
+let BENCH_LAST_UPDATE = null;     // timestamp string
+let BENCH_LAST_SOURCE = '';       // e.g. "ECB · TwelveData"
+let BENCH_AUTO_REFRESH_TIMER = null;
 let PORTFOLIO_CZK = 0;
 const SP500_BASE = 6296.50;
 
@@ -4900,8 +4921,172 @@ function setLiveStatus(ok, msg) {
   const dot = document.getElementById('liveStatusDot');
   const txt = document.getElementById('liveStatusText');
   if (!dot || !txt) return;
-  dot.className = 'status-dot ' + (ok === true ? 'live' : ok === false ? 'err' : 'warn');
+  // Accept boolean OR string ('ok'/'warn'/'err')
+  let cls;
+  if (ok === true || ok === 'ok') cls = 'live';
+  else if (ok === false || ok === 'err') cls = 'err';
+  else cls = 'warn';
+  dot.className = 'status-dot ' + cls;
   txt.textContent = msg;
+}
+
+/* ─── LIVE BENCHMARK DATA FETCHERS ──────────────────
+   FX: Frankfurter (ECB-based, free, no key, CORS OK)
+   SP500: TwelveData SPX (needs TD key — same as for stock charts) */
+
+async function fetchFXLive() {
+  // Today's USD/CZK + yesterday's close for daily change
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=CZK');
+    if (!r.ok) throw new Error('Frankfurter ' + r.status);
+    const d = await r.json();
+    if (!d.rates || !d.rates.CZK) throw new Error('No CZK rate');
+    USDCZK_NOW = d.rates.CZK;
+    // Latest known business day = d.date; fetch prior day for change
+    try {
+      const todayD = new Date(d.date);
+      const prior = new Date(todayD); prior.setDate(prior.getDate() - 1);
+      const ymd = prior.toISOString().slice(0, 10);
+      const r2 = await fetch(`https://api.frankfurter.app/${ymd}?from=USD&to=CZK`);
+      if (r2.ok) {
+        const d2 = await r2.json();
+        if (d2.rates && d2.rates.CZK) {
+          USDCZK_PREV = d2.rates.CZK;
+          FX_DAY_CHG_PCT = ((USDCZK_NOW - USDCZK_PREV) / USDCZK_PREV) * 100;
+        }
+      }
+    } catch(e) {}
+    return { rate: USDCZK_NOW, date: d.date };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+async function fetchFXHistory() {
+  // Monthly USD/CZK from 2025-07 to now — for chart
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const r = await fetch(`https://api.frankfurter.app/2025-07-01..${today}?from=USD&to=CZK`);
+    if (!r.ok) throw new Error('Frankfurter hist ' + r.status);
+    const d = await r.json();
+    if (!d.rates) throw new Error('No rates');
+    // Get last available date of each month
+    const byMonth = {};
+    Object.keys(d.rates).sort().forEach(date => {
+      const ym = date.slice(0, 7);
+      byMonth[ym] = d.rates[date].CZK; // overwrite → ends up with latest of month
+    });
+    Object.assign(USDCZK_MONTHLY, byMonth);
+    return Object.keys(byMonth).length;
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function fetchSP500Live(tdKey) {
+  if (!tdKey) return { error: 'NO_KEY' };
+  try {
+    const r = await fetch(`https://api.twelvedata.com/quote?symbol=SPX&apikey=${encodeURIComponent(tdKey)}`);
+    if (!r.ok) throw new Error('TwelveData ' + r.status);
+    const d = await r.json();
+    if (d.status === 'error') throw new Error(d.message || 'TD error');
+    const close = parseFloat(d.close);
+    const prev = parseFloat(d.previous_close);
+    if (isNaN(close)) throw new Error('Bad close');
+    SP500_LIVE_PRICE = close;
+    if (!isNaN(prev)) {
+      SP500_PREV = prev;
+      SP500_DAY_CHG_PCT = ((close - prev) / prev) * 100;
+    }
+    return { price: close };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+async function fetchSP500History(tdKey) {
+  if (!tdKey) return 0;
+  try {
+    // 24 months of monthly closes
+    const r = await fetch(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1month&outputsize=24&apikey=${encodeURIComponent(tdKey)}`);
+    if (!r.ok) throw new Error('TD hist ' + r.status);
+    const d = await r.json();
+    if (d.status === 'error' || !Array.isArray(d.values)) throw new Error('Bad hist');
+    let count = 0;
+    d.values.forEach(v => {
+      const ym = v.datetime.slice(0, 7);
+      const close = parseFloat(v.close);
+      if (!isNaN(close) && ym >= '2025-07') {
+        SP500_MONTHLY[ym] = close;
+        count++;
+      }
+    });
+    return count;
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function refreshBenchmark(opts) {
+  opts = opts || {};
+  setLiveStatus('warn', 'Stahuji tržní data…');
+  const sources = [];
+  let errors = [];
+
+  // 1) FX live + history (Frankfurter, no key needed)
+  const fx = await fetchFXLive();
+  if (fx.error) errors.push('FX: ' + fx.error);
+  else sources.push('ECB');
+  await fetchFXHistory();
+
+  // 2) SP500 live + history (TwelveData, needs key)
+  const tdKey = (typeof getTwelveDataKey === 'function') ? getTwelveDataKey() : '';
+  if (tdKey) {
+    const sp = await fetchSP500Live(tdKey);
+    if (sp.error) errors.push('SP500: ' + sp.error);
+    else sources.push('TwelveData');
+    await fetchSP500History(tdKey);
+  } else {
+    errors.push('SP500: chybí Twelve Data klíč (přidej v ⚙ Live ceny)');
+  }
+
+  BENCH_LAST_UPDATE = new Date();
+  BENCH_LAST_SOURCE = sources.join(' · ') || '—';
+
+  const mkdata = {
+    sp500: SP500_MONTHLY, fx: USDCZK_MONTHLY,
+    spPrice: SP500_LIVE_PRICE, czk: USDCZK_NOW,
+    spDayPct: SP500_DAY_CHG_PCT, fxDayPct: FX_DAY_CHG_PCT,
+    ts: BENCH_LAST_UPDATE.getTime(), source: BENCH_LAST_SOURCE,
+  };
+  try { localStorage.setItem('tradestat_mkdata', JSON.stringify(mkdata)); } catch(e) {}
+  if (window.__fbSave) window.__fbSave('mkdata', mkdata);
+
+  const ok = errors.length === 0;
+  const niceTime = BENCH_LAST_UPDATE.toLocaleTimeString('cs-CZ');
+  if (ok) {
+    setLiveStatus('ok', `Aktualizováno ${niceTime} · ${BENCH_LAST_SOURCE}`);
+  } else if (sources.length > 0) {
+    setLiveStatus('warn', `Částečně ${niceTime} · ${sources.join(' · ')} · ${errors.join(' · ')}`);
+  } else {
+    setLiveStatus('err', errors.join(' · '));
+  }
+  renderBenchmark();
+}
+
+function saveBenchmarkPortfolio() {
+  const pfInput = document.getElementById('manualPortfolio');
+  if (!pfInput) return;
+  const pfVal = parseFloat(pfInput.value);
+  if (isNaN(pfVal) || pfVal < 0) {
+    setLiveStatus('err', 'Zadej platnou hodnotu portfolia v Kč');
+    return;
+  }
+  PORTFOLIO_CZK = pfVal;
+  saveSettings();
+  renderBenchmark();
+  const niceTime = new Date().toLocaleTimeString('cs-CZ');
+  setLiveStatus('ok', `Portfolio uloženo: ${PORTFOLIO_CZK.toLocaleString('cs-CZ')} Kč · ${niceTime}`);
 }
 
 function applyManualData() {
@@ -4955,6 +5140,7 @@ function loadLiveData() {
   const pfEl = document.getElementById('manualPortfolio');
   if (pfEl && PORTFOLIO_CZK > 0) pfEl.value = PORTFOLIO_CZK;
 
+  let hadCache = false;
   try {
     const raw = localStorage.getItem('tradestat_mkdata');
     if (raw) {
@@ -4963,19 +5149,33 @@ function loadLiveData() {
       if (d.fx) USDCZK_MONTHLY = Object.assign({}, USDCZK_FALLBACK, d.fx);
       if (d.spPrice) SP500_LIVE_PRICE = d.spPrice;
       if (d.czk) USDCZK_NOW = d.czk;
-      if (d.date) {
-        setLiveStatus(true, 'Uloženo ' + d.date + ' · SP500: ' + SP500_LIVE_PRICE.toLocaleString('cs-CZ', {maximumFractionDigits:0}) + ' · USD/CZK: ' + USDCZK_NOW.toFixed(2) + (PORTFOLIO_CZK > 0 ? ' · Portfolio: ' + PORTFOLIO_CZK.toLocaleString('cs-CZ') + ' Kč' : ''));
-        const spEl = document.getElementById('manualSP500');
-        const fxEl = document.getElementById('manualFX');
-        if (spEl) spEl.value = d.spPrice;
-        if (fxEl) fxEl.value = d.czk;
-        renderBenchmark();
-        return;
-      }
+      if (typeof d.spDayPct === 'number') SP500_DAY_CHG_PCT = d.spDayPct;
+      if (typeof d.fxDayPct === 'number') FX_DAY_CHG_PCT = d.fxDayPct;
+      if (d.ts) BENCH_LAST_UPDATE = new Date(d.ts);
+      if (d.source) BENCH_LAST_SOURCE = d.source;
+      hadCache = !!(d.spPrice || d.czk);
+      const spEl = document.getElementById('manualSP500');
+      const fxEl = document.getElementById('manualFX');
+      if (spEl && d.spPrice) spEl.value = d.spPrice;
+      if (fxEl && d.czk) fxEl.value = d.czk;
     }
   } catch(e) {}
-  setLiveStatus(false, PORTFOLIO_CZK > 0 ? 'Zadej aktuální SP500 a USD/CZK kurz a klikni Aktualizovat' : 'Zadej velikost portfolia v Kč, SP500 a USD/CZK kurz');
-  renderBenchmark();
+
+  if (hadCache && BENCH_LAST_UPDATE) {
+    const ageMin = (Date.now() - BENCH_LAST_UPDATE.getTime()) / 60000;
+    if (ageMin < 5) {
+      setLiveStatus('ok', `Aktualizováno ${BENCH_LAST_UPDATE.toLocaleTimeString('cs-CZ')} · ${BENCH_LAST_SOURCE || 'cache'}`);
+      renderBenchmark();
+      return;
+    }
+    setLiveStatus('warn', `Cache ${Math.round(ageMin)} min · stahuji nová data…`);
+    renderBenchmark();
+  } else {
+    setLiveStatus('warn', 'Stahuji tržní data…');
+    renderBenchmark();
+  }
+  // Auto-fetch fresh data
+  refreshBenchmark();
 }
 
 function renderBenchmark() {
@@ -4985,24 +5185,85 @@ function renderBenchmark() {
   const portfolioUSD = hasPortfolio ? (PORTFOLIO_CZK / USDCZK_NOW) : 0;
   const myReturnPct = hasPortfolio ? (totalUSD / portfolioUSD) * 100 : 0;
 
-  const sp500Now = SP500_MONTHLY['2026-04'] || SP500_LIVE_PRICE;
+  // SP500: use live price if newer than monthly snapshot
+  const sp500Now = SP500_LIVE_PRICE || SP500_MONTHLY['2026-04'] || SP500_BASE;
   const sp500Return = (sp500Now - SP500_BASE) / SP500_BASE * 100;
   const alpha = myReturnPct - sp500Return;
 
   const plCZK = totalUSD * USDCZK_NOW;
-  const fxChange = ((USDCZK_NOW - 21.057) / 21.057) * 100;
+  const fxBase = 21.057;
+  const fxChange = ((USDCZK_NOW - fxBase) / fxBase) * 100;
+
+  // ── Live pills in status bar ──
+  const pillsEl = document.getElementById('bmLivePills');
+  if (pillsEl) {
+    const spDir = SP500_DAY_CHG_PCT > 0.01 ? 'up' : SP500_DAY_CHG_PCT < -0.01 ? 'down' : 'flat';
+    const fxDir = FX_DAY_CHG_PCT > 0.01 ? 'up' : FX_DAY_CHG_PCT < -0.01 ? 'down' : 'flat';
+    const pill = (label, val, dayPct, dir) => {
+      const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '→';
+      const color = dir === 'up' ? 'var(--win)' : dir === 'down' ? 'var(--loss)' : 'var(--muted)';
+      const dayTxt = dayPct ? `<span style="color:${color};font-size:10px;font-weight:600;margin-left:6px">${arrow} ${dayPct >= 0 ? '+' : ''}${dayPct.toFixed(2)}%</span>` : '';
+      return `<div style="padding:6px 12px;background:var(--glass-light);border:1px solid var(--border);border-radius:8px;font-family:var(--fira);font-size:12px">
+        <span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin-right:6px">${label}</span>
+        <b style="color:var(--text)">${val}</b>${dayTxt}
+      </div>`;
+    };
+    pillsEl.innerHTML = [
+      pill('SP500', sp500Now.toLocaleString('cs-CZ', {maximumFractionDigits:0}), SP500_DAY_CHG_PCT, spDir),
+      pill('USD/CZK', USDCZK_NOW.toFixed(3), FX_DAY_CHG_PCT, fxDir),
+    ].join('');
+  }
+
+  // ── Beat-the-market metric ──
+  // For each month with closed trades, compare my % return to SP500's
+  const myMonthlyPL = {};
+  closed.forEach(t => {
+    if (t.close_date) {
+      const m = t.close_date.slice(0,7);
+      myMonthlyPL[m] = (myMonthlyPL[m]||0) + t.pl;
+    }
+  });
+  const sp500Months = Object.keys(SP500_MONTHLY).filter(m => m >= '2025-07').sort();
+  let beats = 0, totalMonths = 0, bestDelta = -Infinity, worstDelta = Infinity, bestMonth = null, worstMonth = null;
+  if (hasPortfolio && sp500Months.length > 1) {
+    for (let i = 1; i < sp500Months.length; i++) {
+      const m = sp500Months[i], prevM = sp500Months[i-1];
+      const myPct = ((myMonthlyPL[m]||0) / portfolioUSD) * 100;
+      const spPct = ((SP500_MONTHLY[m] - SP500_MONTHLY[prevM]) / SP500_MONTHLY[prevM]) * 100;
+      const delta = myPct - spPct;
+      totalMonths++;
+      if (delta > 0) beats++;
+      if (delta > bestDelta) { bestDelta = delta; bestMonth = m; }
+      if (delta < worstDelta) { worstDelta = delta; worstMonth = m; }
+    }
+  }
+  const beatRate = totalMonths > 0 ? (beats / totalMonths) * 100 : 0;
+
+  const fmtMonth = (m) => {
+    if (!m) return '—';
+    const [y, mo] = m.split('-');
+    const names = ['led','úno','bře','dub','kvě','čer','čvc','srp','zář','říj','lis','pro'];
+    return names[parseInt(mo,10)-1] + ' ' + y.slice(2);
+  };
 
   const kEl = document.getElementById('benchmarkKpis');
   if (!kEl) return;
 
   const DASH = '—';
+  const spDailySub = SP500_DAY_CHG_PCT
+    ? `dnes ${SP500_DAY_CHG_PCT >= 0 ? '+' : ''}${SP500_DAY_CHG_PCT.toFixed(2)}%`
+    : '6 296 → ' + sp500Now.toLocaleString('cs-CZ', {maximumFractionDigits:0});
+
   kEl.innerHTML = [
     {label:'Tvůj výnos (USD)', val: fmt$round(totalUSD), sub: hasPortfolio ? myReturnPct.toFixed(1)+'% z portfolia' : 'nastav portfolio výše', cls: clr(totalUSD)},
-    {label:'SP500 od července', val: sp500Return.toFixed(1)+'%', sub: '6 296 → '+sp500Now.toLocaleString('cs-CZ', {maximumFractionDigits:0}), cls: sp500Return > 0 ? 'positive':'negative'},
+    {label:'SP500 od července', val: (sp500Return>=0?'+':'')+sp500Return.toFixed(1)+'%', sub: spDailySub, cls: sp500Return > 0 ? 'positive':'negative'},
     {label:'Alpha (vs SP500)', val: hasPortfolio ? ((alpha>=0?'+':'')+alpha.toFixed(1)+'%') : DASH, sub: hasPortfolio ? (alpha >= 0 ? 'Překonáváš trh ✓' : 'Zaostáváš za trhem') : 'vyžaduje portfolio', cls: hasPortfolio ? (alpha >= 0 ? 'positive':'negative') : 'neutral'},
-    {label:'P&L v Kč (aktuálně)', val: (plCZK>=0?'+':'')+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč', sub: 'při kurzu '+USDCZK_NOW+' Kč/USD', cls: plCZK>=0?'positive':'negative'},
+    {label:'Beat rate (měs.)', val: hasPortfolio && totalMonths>0 ? beatRate.toFixed(0)+'%' : DASH, sub: hasPortfolio && totalMonths>0 ? `${beats}/${totalMonths} měsíců nad SP500` : 'vyžaduje portfolio', cls: hasPortfolio && totalMonths>0 ? (beatRate >= 50 ? 'positive':'negative') : 'neutral'},
+    {label:'Nejlepší měsíc vs SP500', val: hasPortfolio && bestMonth ? ('+'+bestDelta.toFixed(1)+'%') : DASH, sub: hasPortfolio && bestMonth ? fmtMonth(bestMonth) : '—', cls: hasPortfolio && bestMonth ? 'positive' : 'neutral'},
+    {label:'Nejhorší měsíc vs SP500', val: hasPortfolio && worstMonth ? (worstDelta.toFixed(1)+'%') : DASH, sub: hasPortfolio && worstMonth ? fmtMonth(worstMonth) : '—', cls: hasPortfolio && worstMonth ? 'negative' : 'neutral'},
+    {label:'P&L v Kč (aktuálně)', val: (plCZK>=0?'+':'')+Math.round(plCZK).toLocaleString('cs-CZ')+' Kč', sub: 'při kurzu '+USDCZK_NOW.toFixed(3)+' Kč/USD', cls: plCZK>=0?'positive':'negative'},
+    {label:'USD/CZK (změna od 7/25)', val: (fxChange>=0?'+':'')+fxChange.toFixed(1)+'%', sub: '21.06 → '+USDCZK_NOW.toFixed(3)+' Kč/USD', cls: fxChange < 0 ? 'negative':'positive'},
     {label:'Portfolio (Kč)', val: hasPortfolio ? (PORTFOLIO_CZK.toLocaleString('cs-CZ')+' Kč') : DASH, sub: hasPortfolio ? ('$'+portfolioUSD.toFixed(0)+' USD') : 'zadej hodnotu výše', cls:'neutral'},
-    {label:'USD/CZK změna', val: (fxChange>=0?'+':'')+fxChange.toFixed(1)+'%', sub: '21.06 → '+USDCZK_NOW+' Kč/USD', cls: fxChange < 0 ? 'negative':'positive'},
   ].map(k =>
     `<div class="kpi glass">
       <div class="kpi-label">${k.label}</div>
@@ -5011,15 +5272,7 @@ function renderBenchmark() {
     </div>`
   ).join('');
 
-  // Build monthly equity curve indexed to 100
-  const myMonthlyPL = {};
-  closed.forEach(t => {
-    if (t.close_date) {
-      const m = t.close_date.slice(0,7);
-      myMonthlyPL[m] = (myMonthlyPL[m]||0) + t.pl;
-    }
-  });
-
+  // (myMonthlyPL already computed above for beat-rate calculation)
   const months = Object.keys(SP500_MONTHLY).filter(m => m >= '2025-07').sort();
   let myCum = 0;
   const myIdx = [], sp500Idx = [], labels = [];
