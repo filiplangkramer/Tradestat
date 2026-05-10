@@ -6,6 +6,7 @@
 <title>TradeStat Pro — Trading Journal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
 <style>
 /* ─────────────────────────────────────────────────────────
@@ -1872,11 +1873,21 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
       <div class="chart-modal-title">
         <h3 id="chartModalStock">—</h3>
         <span class="tv-symbol" id="chartModalSymbol">—</span>
+        <div id="chartRangeBtns" style="display:flex;gap:4px;margin-left:14px">
+          <button class="live-mini-btn" data-range="30">1M</button>
+          <button class="live-mini-btn primary" data-range="90">3M</button>
+          <button class="live-mini-btn" data-range="180">6M</button>
+          <button class="live-mini-btn" data-range="365">1R</button>
+        </div>
       </div>
-      <button class="chart-modal-close" onclick="closeChartModal()" title="Zavřít (Esc)">×</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a id="chartOpenTV" href="#" target="_blank" rel="noopener" class="live-mini-btn primary" style="text-decoration:none">🔗 Otevřít na TradingView</a>
+        <button class="chart-modal-close" onclick="closeChartModal()" title="Zavřít (Esc)">×</button>
+      </div>
     </div>
     <div class="chart-modal-body">
-      <iframe id="chartModalFrame" src="about:blank" allowtransparency="true" scrolling="no" allowfullscreen></iframe>
+      <div id="chartContainer" style="width:100%;height:100%"></div>
+      <div id="chartLoadingMsg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--fira);font-size:13px;pointer-events:none">Načítám data…</div>
     </div>
     <div class="chart-modal-info" id="chartModalInfo"></div>
   </div>
@@ -1897,6 +1908,16 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
         Free plán = 60 requestů/min. Registrace zdarma na
         <a href="https://finnhub.io/register" target="_blank" rel="noopener" style="color:var(--cyan)">finnhub.io/register</a>.
         Klíč se ukládá jen do tvého prohlížeče (localStorage) — nikam jinam.
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Twelve Data API klíč (pro grafy akcií)</label>
+      <input class="form-input" id="ls_tdkey" type="password" placeholder="Volitelné — bez klíče půjdou grafy jen u krypta" autocomplete="off">
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5">
+        Free plán = 800 requestů/den. Registrace zdarma na
+        <a href="https://twelvedata.com/register" target="_blank" rel="noopener" style="color:var(--cyan)">twelvedata.com/register</a>.
+        Krypto grafy fungují i bez klíče (CoinGecko).
       </div>
     </div>
 
@@ -2596,6 +2617,7 @@ function openLiveSettings() {
   const ov = document.getElementById('liveSettingsOverlay'); if (!ov) return;
   const st = window.LivePrices.getState();
   document.getElementById('ls_apikey').value = window.LivePrices.getKey();
+  const tdEl = document.getElementById('ls_tdkey'); if (tdEl) tdEl.value = getTwelveDataKey();
   document.getElementById('ls_interval').value = st.intervalSec || 60;
   document.getElementById('ls_enabled').checked = !!st.enabled;
   ov.style.display = 'flex';
@@ -2605,9 +2627,11 @@ function closeLiveSettings() {
 }
 function saveLiveSettings() {
   const key = document.getElementById('ls_apikey').value.trim();
+  const tdKey = document.getElementById('ls_tdkey') ? document.getElementById('ls_tdkey').value.trim() : '';
   const interval = parseInt(document.getElementById('ls_interval').value, 10);
   const enabled = document.getElementById('ls_enabled').checked;
   if (key) window.LivePrices.setKey(key);
+  setTwelveDataKey(tdKey);
   window.LivePrices.setInterval(isNaN(interval) ? 60 : interval);
   window.LivePrices.setEnabled(enabled);
   closeLiveSettings();
@@ -2646,63 +2670,210 @@ function resolveTVSymbol(t) {
   return null;
 }
 
+/* Twelve Data key storage (separate from Finnhub) */
+const TD_KEY_STORE = 'tradestat_twelvedata_key';
+function getTwelveDataKey() { try { return localStorage.getItem(TD_KEY_STORE) || ''; } catch(e) { return ''; } }
+function setTwelveDataKey(k) { try { if (k) localStorage.setItem(TD_KEY_STORE, k); else localStorage.removeItem(TD_KEY_STORE); } catch(e) {} }
+
+/* OHLC fetchers — return array of {time, open, high, low, close} */
+async function fetchCryptoOHLC(coinId, days) {
+  // CoinGecko: /coins/{id}/ohlc?vs_currency=usd&days=N
+  // Returns: [[ts, o, h, l, c], ...]
+  const u = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}/ohlc?vs_currency=usd&days=${days}`;
+  const r = await fetch(u);
+  if (!r.ok) throw new Error('CoinGecko OHLC ' + r.status);
+  const d = await r.json();
+  if (!Array.isArray(d)) throw new Error('Bad OHLC');
+  return d.map(row => ({
+    time: Math.floor(row[0] / 1000),
+    open: row[1], high: row[2], low: row[3], close: row[4],
+  }));
+}
+
+async function fetchStockOHLC(symbol, days, key) {
+  if (!key) throw new Error('NO_KEY');
+  // Twelve Data: /time_series?symbol=AAPL&interval=1day&outputsize=N&apikey=...
+  const u = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${days}&apikey=${encodeURIComponent(key)}`;
+  const r = await fetch(u);
+  if (!r.ok) throw new Error('TwelveData ' + r.status);
+  const d = await r.json();
+  if (d.status === 'error') throw new Error(d.message || 'TwelveData error');
+  if (!Array.isArray(d.values)) throw new Error('Bad time_series');
+  // values come newest-first; lightweight-charts wants oldest-first
+  return d.values.slice().reverse().map(v => ({
+    time: Math.floor(new Date(v.datetime + 'T00:00:00Z').getTime() / 1000),
+    open: parseFloat(v.open), high: parseFloat(v.high),
+    low: parseFloat(v.low), close: parseFloat(v.close),
+  })).filter(x => !isNaN(x.close));
+}
+
+/* Chart instance state */
+let chartInstance = null;
+let chartSeries = null;
+let chartCtx = null; // {trade, sym, range}
+
+async function renderLightweightChart(trade, sym, days) {
+  const container = document.getElementById('chartContainer');
+  const loadingEl = document.getElementById('chartLoadingMsg');
+  const infoEl = document.getElementById('chartModalInfo');
+
+  // Cleanup previous
+  if (chartInstance) { try { chartInstance.remove(); } catch(e) {} chartInstance = null; chartSeries = null; }
+  container.innerHTML = '';
+  loadingEl.style.display = 'flex';
+  loadingEl.textContent = 'Načítám data…';
+
+  let ohlc;
+  try {
+    if (sym.kind === 'crypto') {
+      // CoinGecko OHLC supports days: 1, 7, 14, 30, 90, 180, 365, max
+      const allowed = [1,7,14,30,90,180,365];
+      const closest = allowed.reduce((a,b) => Math.abs(b-days) < Math.abs(a-days) ? b : a);
+      ohlc = await fetchCryptoOHLC(sym.id, closest);
+    } else {
+      const tdKey = getTwelveDataKey();
+      ohlc = await fetchStockOHLC(sym.id, days, tdKey);
+    }
+  } catch (e) {
+    if (e.message === 'NO_KEY') {
+      loadingEl.innerHTML = `
+        <div style="text-align:center;line-height:1.6">
+          <div style="font-size:14px;color:var(--text);margin-bottom:8px">⚠ Pro grafy akcií potřebuješ Twelve Data API klíč</div>
+          <div>Klikni <b>⚙ Nastavení</b> v Live ceny → vlož klíč z twelvedata.com (zdarma)</div>
+          <div style="margin-top:10px">Mezitím můžeš otevřít graf kliknutím vpravo nahoře:<br><b>🔗 Otevřít na TradingView</b></div>
+        </div>`;
+    } else {
+      loadingEl.innerHTML = `<div style="color:var(--loss)">Chyba: ${e.message}</div>`;
+    }
+    return;
+  }
+
+  if (!ohlc || ohlc.length < 2) {
+    loadingEl.textContent = 'Žádná data pro tento symbol.';
+    return;
+  }
+
+  loadingEl.style.display = 'none';
+
+  // Create chart
+  chartInstance = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: container.clientHeight,
+    layout: { background: { color: '#131722' }, textColor: '#9aa4c2', fontFamily: 'JetBrains Mono, monospace' },
+    grid: { vertLines: { color: 'rgba(140,155,220,0.06)' }, horzLines: { color: 'rgba(140,155,220,0.06)' } },
+    rightPriceScale: { borderColor: 'rgba(140,155,220,0.12)' },
+    timeScale: { borderColor: 'rgba(140,155,220,0.12)', timeVisible: false, secondsVisible: false },
+    crosshair: { mode: 1 },
+  });
+
+  chartSeries = chartInstance.addCandlestickSeries({
+    upColor: '#34d399', downColor: '#fb7185',
+    borderUpColor: '#34d399', borderDownColor: '#fb7185',
+    wickUpColor: '#34d399', wickDownColor: '#fb7185',
+  });
+  chartSeries.setData(ohlc);
+
+  // Entry price line (always)
+  if (trade.open_price) {
+    chartSeries.createPriceLine({
+      price: trade.open_price,
+      color: '#5eead4',
+      lineWidth: 2,
+      lineStyle: 0, // solid
+      axisLabelVisible: true,
+      title: `Vstup ${fmtDate(trade.open_date)}`,
+    });
+  }
+
+  // Exit price line (closed trades only)
+  if (trade.is_closed && trade.close_price) {
+    chartSeries.createPriceLine({
+      price: trade.close_price,
+      color: trade.pl >= 0 ? '#fbbf24' : '#fb7185',
+      lineWidth: 2,
+      lineStyle: 2, // dashed
+      axisLabelVisible: true,
+      title: `Výstup ${fmtDate(trade.close_date)}`,
+    });
+  }
+
+  chartInstance.timeScale().fitContent();
+
+  // Update info row at bottom with last close
+  const last = ohlc[ohlc.length - 1];
+  const q = window.LivePrices ? window.LivePrices.getQuote(trade) : null;
+  const livePrice = q ? q.price : last.close;
+  const units = trade.units || (trade.invested && trade.open_price ? trade.invested / trade.open_price : null);
+  const lines = [
+    `Vstup: <b style="color:#5eead4">$${trade.open_price ?? '—'}</b>`,
+    `Aktuální: <b>$${fmtPrice(livePrice)}</b>`,
+    units ? `Kusů: <b>${units.toFixed(units < 1 ? 4 : 2)}</b>` : null,
+    `Investice: <b>$${(trade.invested||0).toFixed(2)}</b>`,
+  ];
+  if (trade.open_price && units) {
+    const unrPL = (livePrice - trade.open_price) * units;
+    const unrPct = ((livePrice - trade.open_price) / trade.open_price) * 100;
+    const cls = unrPL >= 0 ? '#34d399' : '#fb7185';
+    lines.push(`${trade.is_closed ? 'P/L' : 'Unrealized'}: <b style="color:${cls}">${unrPL >= 0 ? '+' : ''}$${unrPL.toFixed(2)} (${unrPct >= 0 ? '+' : ''}${unrPct.toFixed(2)}%)</b>`);
+  }
+  if (trade.is_closed && trade.close_price) {
+    lines.push(`Výstup: <b style="color:#fbbf24">$${trade.close_price} · ${fmtDate(trade.close_date)}</b>`);
+  }
+  infoEl.innerHTML = lines.filter(Boolean).join(' · ');
+}
+
 function openChartModal(id) {
   const t = trades.find(x => x.id === id);
   if (!t) return;
-  const tvSymbol = resolveTVSymbol(t);
-  if (!tvSymbol) {
+  const sym = window.LivePrices ? window.LivePrices.resolveSymbol(t) : null;
+  if (!sym) {
     alert('Pro tento trade neznám ticker. Otevři ✎ Upravit a zadej ticker (např. AAPL, BTC).');
     return;
   }
 
+  const tvSymbol = resolveTVSymbol(t) || sym.id;
   document.getElementById('chartModalStock').textContent = t.stock;
-  document.getElementById('chartModalSymbol').textContent = tvSymbol;
+  document.getElementById('chartModalSymbol').textContent = sym.kind === 'crypto' ? (sym.id.toUpperCase()) : sym.id;
+  document.getElementById('chartOpenTV').href = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}`;
 
-  const params = new URLSearchParams({
-    symbol: tvSymbol,
-    interval: 'D',
-    theme: 'dark',
-    style: '1',
-    locale: 'en',
-    toolbar_bg: '#131722',
-    withdateranges: '1',
-    hide_side_toolbar: '0',
-    allow_symbol_change: '1',
-    save_image: '1',
-    studies: '[]',
-    hideideas: '1',
-    timezone: 'Europe/Prague',
+  // Setup range buttons
+  const btns = document.querySelectorAll('#chartRangeBtns button');
+  btns.forEach(b => {
+    b.classList.remove('primary');
+    b.onclick = () => {
+      btns.forEach(x => x.classList.remove('primary'));
+      b.classList.add('primary');
+      const d = parseInt(b.dataset.range, 10);
+      chartCtx = { trade: t, sym, range: d };
+      renderLightweightChart(t, sym, d);
+    };
   });
-  document.getElementById('chartModalFrame').src =
-    'https://s.tradingview.com/widgetembed/?' + params.toString();
+  const defaultBtn = document.querySelector('#chartRangeBtns button[data-range="90"]');
+  if (defaultBtn) defaultBtn.classList.add('primary');
 
-  // Position summary
-  const q = window.LivePrices ? window.LivePrices.getQuote(t) : null;
-  const units = t.units || (t.invested && t.open_price ? t.invested / t.open_price : null);
-  const lines = [
-    `Vstup: <b>$${t.open_price ?? '—'}</b>`,
-    `Investice: <b>$${(t.invested||0).toFixed(2)}</b>`,
-    units ? `Kusů: <b>${units.toFixed(units < 1 ? 4 : 2)}</b>` : null,
-    `Otevřeno: <b>${fmtDate(t.open_date)}</b>`,
-  ];
-  if (q && t.open_price && units) {
-    const unrPL = (q.price - t.open_price) * units;
-    const unrPct = ((q.price - t.open_price) / t.open_price) * 100;
-    const cls = unrPL >= 0 ? 'var(--win)' : 'var(--loss)';
-    lines.push(`Aktuální: <b style="color:${cls}">$${fmtPrice(q.price)}</b>`);
-    lines.push(`Unrealized: <b style="color:${cls}">${unrPL >= 0 ? '+' : ''}$${unrPL.toFixed(2)} (${unrPct >= 0 ? '+' : ''}${unrPct.toFixed(2)}%)</b>`);
-  }
-  document.getElementById('chartModalInfo').innerHTML = lines.filter(Boolean).join(' · ');
+  chartCtx = { trade: t, sym, range: 90 };
 
   document.getElementById('chartModalOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // Render after a tick so container has correct size
+  setTimeout(() => renderLightweightChart(t, sym, 90), 50);
 }
 
 function closeChartModal() {
   document.getElementById('chartModalOverlay').style.display = 'none';
-  document.getElementById('chartModalFrame').src = 'about:blank';
   document.body.style.overflow = '';
+  if (chartInstance) { try { chartInstance.remove(); } catch(e) {} chartInstance = null; chartSeries = null; }
+  document.getElementById('chartContainer').innerHTML = '';
+  chartCtx = null;
 }
+
+window.addEventListener('resize', () => {
+  if (chartInstance && document.getElementById('chartModalOverlay').style.display === 'flex') {
+    const c = document.getElementById('chartContainer');
+    chartInstance.applyOptions({ width: c.clientWidth, height: c.clientHeight });
+  }
+});
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
