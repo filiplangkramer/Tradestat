@@ -4904,6 +4904,7 @@ let FX_DAY_CHG_PCT = 0;           // today's USD/CZK daily change %
 let BENCH_LAST_UPDATE = null;     // timestamp string
 let BENCH_LAST_SOURCE = '';       // e.g. "ECB · TwelveData"
 let BENCH_AUTO_REFRESH_TIMER = null;
+let SP500_SYMBOL = 'SPX';         // which symbol returned data ('SPX' paid, 'SPY' free fallback)
 let PORTFOLIO_CZK = 0;
 const SP500_BASE = 6296.50;
 
@@ -4994,68 +4995,78 @@ async function fetchFXHistory() {
 
 async function fetchSP500Daily(tdKey) {
   if (!tdKey) return 0;
-  try {
-    // ~300 trading days back — covers from before July 2025 to today
-    const r = await fetch(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1day&outputsize=400&apikey=${encodeURIComponent(tdKey)}`);
-    if (!r.ok) throw new Error('TD daily ' + r.status);
-    const d = await r.json();
-    if (d.status === 'error' || !Array.isArray(d.values)) throw new Error('Bad daily');
-    SP500_DAILY = {};
-    d.values.forEach(v => {
-      const close = parseFloat(v.close);
-      const ymd = v.datetime.slice(0, 10);
-      if (!isNaN(close) && ymd >= '2025-07-01') {
-        SP500_DAILY[ymd] = close;
+  // Try SPX (paid) → SPY (free plan)
+  for (const sym of ['SPX', 'SPY']) {
+    try {
+      const r = await fetch(`https://api.twelvedata.com/time_series?symbol=${sym}&interval=1day&outputsize=400&apikey=${encodeURIComponent(tdKey)}`);
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.status === 'error' || !Array.isArray(d.values)) continue;
+      const tmp = {};
+      d.values.forEach(v => {
+        const close = parseFloat(v.close);
+        const ymd = v.datetime.slice(0, 10);
+        if (!isNaN(close) && ymd >= '2025-07-01') {
+          tmp[ymd] = close;
+        }
+      });
+      if (Object.keys(tmp).length > 5) {
+        SP500_DAILY = tmp;
+        SP500_SYMBOL = sym;
+        return Object.keys(SP500_DAILY).length;
       }
-    });
-    return Object.keys(SP500_DAILY).length;
-  } catch (e) {
-    return 0;
+    } catch (e) {}
   }
+  return 0;
 }
 
 async function fetchSP500Live(tdKey) {
   if (!tdKey) return { error: 'NO_KEY' };
-  try {
-    const r = await fetch(`https://api.twelvedata.com/quote?symbol=SPX&apikey=${encodeURIComponent(tdKey)}`);
-    if (!r.ok) throw new Error('TwelveData ' + r.status);
-    const d = await r.json();
-    if (d.status === 'error') throw new Error(d.message || 'TD error');
-    const close = parseFloat(d.close);
-    const prev = parseFloat(d.previous_close);
-    if (isNaN(close)) throw new Error('Bad close');
-    SP500_LIVE_PRICE = close;
-    if (!isNaN(prev)) {
-      SP500_PREV = prev;
-      SP500_DAY_CHG_PCT = ((close - prev) / prev) * 100;
-    }
-    return { price: close };
-  } catch (e) {
-    return { error: e.message };
+  // Try SPX (index, paid plan) → SPY (ETF, free plan)
+  let lastErr = '';
+  for (const sym of ['SPX', 'SPY']) {
+    try {
+      const r = await fetch(`https://api.twelvedata.com/quote?symbol=${sym}&apikey=${encodeURIComponent(tdKey)}`);
+      if (!r.ok) { lastErr = 'TwelveData ' + r.status; continue; }
+      const d = await r.json();
+      if (d.status === 'error') { lastErr = d.message || 'TD error'; continue; }
+      const close = parseFloat(d.close);
+      const prev = parseFloat(d.previous_close);
+      if (isNaN(close)) { lastErr = 'Bad close'; continue; }
+      SP500_LIVE_PRICE = close;
+      SP500_SYMBOL = sym;
+      if (!isNaN(prev)) {
+        SP500_PREV = prev;
+        SP500_DAY_CHG_PCT = ((close - prev) / prev) * 100;
+      }
+      return { price: close, symbol: sym };
+    } catch (e) { lastErr = e.message; }
   }
+  return { error: lastErr || 'fetch failed' };
 }
 
 async function fetchSP500History(tdKey) {
   if (!tdKey) return 0;
-  try {
-    // 24 months of monthly closes
-    const r = await fetch(`https://api.twelvedata.com/time_series?symbol=SPX&interval=1month&outputsize=24&apikey=${encodeURIComponent(tdKey)}`);
-    if (!r.ok) throw new Error('TD hist ' + r.status);
-    const d = await r.json();
-    if (d.status === 'error' || !Array.isArray(d.values)) throw new Error('Bad hist');
-    let count = 0;
-    d.values.forEach(v => {
-      const ym = v.datetime.slice(0, 7);
-      const close = parseFloat(v.close);
-      if (!isNaN(close) && ym >= '2025-07') {
-        SP500_MONTHLY[ym] = close;
-        count++;
-      }
-    });
-    return count;
-  } catch (e) {
-    return 0;
+  for (const sym of ['SPX', 'SPY']) {
+    try {
+      const r = await fetch(`https://api.twelvedata.com/time_series?symbol=${sym}&interval=1month&outputsize=24&apikey=${encodeURIComponent(tdKey)}`);
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.status === 'error' || !Array.isArray(d.values)) continue;
+      SP500_MONTHLY = {};  // reset before populating
+      let count = 0;
+      d.values.forEach(v => {
+        const ym = v.datetime.slice(0, 7);
+        const close = parseFloat(v.close);
+        if (!isNaN(close) && ym >= '2025-07') {
+          SP500_MONTHLY[ym] = close;
+          count++;
+        }
+      });
+      if (count > 0) { SP500_SYMBOL = sym; return count; }
+    } catch (e) {}
   }
+  return 0;
 }
 
 async function refreshBenchmark(opts) {
@@ -5333,8 +5344,26 @@ function renderBenchmark() {
   destroyChart('bm'); destroyChart('bmm'); destroyChart('fx');
 
   // ─── Build DAILY equity vs SP500 series ───
+  // Inject today's live SP500 price if missing (so chart extends to "now")
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  if (SP500_LIVE_PRICE && SP500_DAILY && Object.keys(SP500_DAILY).length > 0 && !SP500_DAILY[todayYmd]) {
+    SP500_DAILY[todayYmd] = SP500_LIVE_PRICE;
+  }
+
   const spDailyDates = Object.keys(SP500_DAILY).sort();
   let dLabels = [], dMyIdx = [], dSpIdx = [];
+
+  // Compute current unrealized P/L from open positions (live)
+  let currentUnrealized = 0;
+  if (window.LivePrices) {
+    getOpen().forEach(t => {
+      const q = window.LivePrices.getQuote(t);
+      if (q && t.open_price && t.invested) {
+        const units = t.units || (t.invested / t.open_price);
+        currentUnrealized += (q.price - t.open_price) * units;
+      }
+    });
+  }
 
   if (spDailyDates.length > 1 && hasPortfolio) {
     // Daily realized P&L map
@@ -5354,16 +5383,19 @@ function renderBenchmark() {
     const dates = spDailyDates.slice(firstIdx);
     if (dates.length > 1) {
       const spBase = SP500_DAILY[dates[0]];
-      // Cumulative P&L UP TO start (so chart starts at proper baseline)
+      // Cumulative P&L UP TO start of range (baseline equity at start)
       let myCumPriorUSD = 0;
       Object.keys(dailyPL).forEach(d => { if (d < dates[0]) myCumPriorUSD += dailyPL[d]; });
       let myCum = myCumPriorUSD;
       const startEquity = portfolioUSD + myCumPriorUSD;
 
+      const lastDate = dates[dates.length - 1];
       dates.forEach(d => {
         if (dailyPL[d]) myCum += dailyPL[d];
         dLabels.push(d);
-        const myEquity = portfolioUSD + myCum;
+        // On the LAST point, add current unrealized P/L from open positions
+        const extra = (d === lastDate) ? currentUnrealized : 0;
+        const myEquity = portfolioUSD + myCum + extra;
         const myI = (myEquity / startEquity) * 100;
         const spI = (SP500_DAILY[d] / spBase) * 100;
         dMyIdx.push(+myI.toFixed(3));
@@ -5403,7 +5435,7 @@ function renderBenchmark() {
           backgroundColor:'rgba(94,234,212,0.18)',
           borderWidth:2.5,
           fill: { target: 1, above: 'rgba(52,211,153,0.18)', below: 'rgba(251,113,133,0.18)' },
-          tension: 0.18,
+          tension: 0,
           pointRadius: 0,
           pointHoverRadius: 5,
           pointHoverBackgroundColor: '#5eead4',
@@ -5417,7 +5449,7 @@ function renderBenchmark() {
           backgroundColor: 'rgba(167,139,250,0.05)',
           borderWidth: 2,
           fill: false,
-          tension: 0.18,
+          tension: 0,
           pointRadius: 0,
           pointHoverRadius: 5,
           pointHoverBackgroundColor: '#a78bfa',
@@ -5472,9 +5504,16 @@ function renderBenchmark() {
   const subEl = document.getElementById('bmChartSub');
   if (subEl) {
     const rangeText = (window.__bmRange === 'all' || !window.__bmRange)
-      ? `${dLabels.length} dní · indexováno na 100`
-      : `posledních ${window.__bmRange} dní · indexováno na 100`;
-    subEl.textContent = rangeText + ' · zelená plocha = předbíháš trh, červená = zaostáváš';
+      ? `${dLabels.length} bodů · indexováno na 100`
+      : `posledních ${window.__bmRange} dní · ${dLabels.length} bodů · indexováno na 100`;
+    const sourceText = ` · zdroj: ${SP500_SYMBOL || 'SPX'}` + (currentUnrealized !== 0 ? ` · vč. unrealized ${currentUnrealized >= 0 ? '+' : ''}$${currentUnrealized.toFixed(0)}` : '');
+    subEl.textContent = rangeText + sourceText + ' · zelená = předbíháš trh, červená = zaostáváš';
+  }
+
+  // Update title to reflect symbol used
+  const titleEl = document.querySelector('#tab-benchmark .card-title');
+  if (titleEl && titleEl.textContent.includes('Equity vs SP500')) {
+    titleEl.innerHTML = `<span class="dot"></span>Equity vs S&P 500 ${SP500_SYMBOL && SP500_SYMBOL !== 'SPX' ? `(${SP500_SYMBOL})` : ''} — denní`;
   }
 
   charts['bmm'] = new Chart(document.getElementById('benchmarkMonthlyChart'), {
