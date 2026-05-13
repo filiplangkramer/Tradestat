@@ -1,0 +1,11 @@
+# Firebase service account — admin access, never commit!
+firebase-key.json
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Node modules (if I ever install firebase-admin locally)
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
