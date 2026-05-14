@@ -2744,32 +2744,52 @@ window.LivePrices = (function(){
     }
 
     // Process serially to respect rate limits (Finnhub 60/min, CoinGecko ~30/min)
+    // Track which symbols Finnhub/CoinGecko couldn't quote (CFD instruments, indices,
+    // commodities, delisted) so we can show "X/Y supported" instead of error-spamming.
+    let okCount = 0, unsupported = [];
+    let realErr = null;
     for (const s of stockTodo) {
       if (!key) break;
       const k = 'stock:' + s.id;
       try {
         state.quotes[k] = await fetchStock(s.id, key);
+        okCount++;
         const haveSpark = state.sparks[k] && (Date.now() - state.sparks[k].ts < LIVE_SPARK_TTL_MS);
         if (!haveSpark) {
           const sp = await fetchStockSpark(s.id, key);
           if (sp) state.sparks[k] = sp;
         }
       } catch(e) {
-        state.lastErr = 'Finnhub: ' + e.message + ' (zkontroluj klíč nebo rate limit)';
+        // 'No quote' = symbol not in Finnhub's universe (CFD instruments, indices, commodities)
+        if (/no quote/i.test(e.message)) unsupported.push(s.id);
+        else realErr = 'Finnhub: ' + e.message;
       }
     }
     for (const c of cryptoTodo) {
       const k = 'crypto:' + c.id;
       try {
         state.quotes[k] = await fetchCrypto(c.id);
+        okCount++;
         const haveSpark = state.sparks[k] && (Date.now() - state.sparks[k].ts < LIVE_SPARK_TTL_MS);
         if (!haveSpark) {
           const sp = await fetchCryptoSpark(c.id);
           if (sp) state.sparks[k] = sp;
         }
       } catch(e) {
-        state.lastErr = 'CoinGecko: ' + e.message;
+        if (/no coin|no quote/i.test(e.message)) unsupported.push(c.id);
+        else realErr = 'CoinGecko: ' + e.message;
       }
+    }
+
+    // Compose status: prioritize a real error (rate limit / auth / network),
+    // otherwise summarize unsupported symbols (silent for the user, not an error)
+    if (realErr) {
+      state.lastErr = realErr + ' (zkontroluj klíč nebo rate limit)';
+    } else if (unsupported.length > 0) {
+      state.lastErr = null;
+      state.lastInfo = `${okCount} live · ${unsupported.length} bez quote (${unsupported.slice(0,3).join(', ')}${unsupported.length>3?'…':''})`;
+    } else {
+      state.lastInfo = null;
     }
 
     state.lastRunAt = Date.now();
@@ -2791,6 +2811,7 @@ window.LivePrices = (function(){
     const bar = document.getElementById('liveBar');
     if (!bar) return;
     const dotCls = state.fetching ? 'loading' : (state.lastErr ? 'err' : (state.enabled ? 'ok' : ''));
+    const okSuffix = state.lastInfo ? ' · ' + state.lastInfo : '';
     const statusText = !state.enabled
       ? 'Live ceny vypnuty'
       : state.fetching
@@ -2798,7 +2819,7 @@ window.LivePrices = (function(){
         : state.lastErr
           ? state.lastErr
           : state.lastRunAt
-            ? 'Aktualizováno ' + new Date(state.lastRunAt).toLocaleTimeString('cs-CZ')
+            ? 'Aktualizováno ' + new Date(state.lastRunAt).toLocaleTimeString('cs-CZ') + okSuffix
             : 'Připraveno';
     bar.innerHTML = `
       <div class="live-bar-status">
