@@ -1110,7 +1110,7 @@ td:nth-child(9){max-width:240px;overflow:hidden;text-overflow:ellipsis;}
   <!-- Firebase Cloud Sync -->
   <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const FILIP_UID = 'Nd8Gh5jBRTSQOPcY3rdYZgn9uLo2';
@@ -1211,9 +1211,46 @@ onAuthStateChanged(auth, async (user) => {
     document.body.classList.add('app-ready');
     if (ov) ov.remove();
 
+    // ───────────────────────────────────────────────────────────
+    // Real-time sync: listen for external Firestore changes
+    // (e.g. when the AI agent updates trades from a Node script).
+    // Without this, this tab would overwrite external changes the
+    // next time saveData() runs.
+    // ───────────────────────────────────────────────────────────
+    if (!window.__fbUnsubscribers) window.__fbUnsubscribers = [];
+    window.__fbUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} });
+    window.__fbUnsubscribers = [];
+
+    const syncKeys = [
+      {fb:'trades',   ls:'tradestat_pro_v1',         reload: () => { if(typeof loadData==='function') loadData(); if(typeof renderAll==='function') renderAll(); if(typeof renderOpenPositions==='function') renderOpenPositions(); }},
+      {fb:'goals',    ls:'tradestat_pro_goals_v1',   reload: () => { if(typeof loadGoals==='function') loadGoals(); if(typeof renderAll==='function') renderAll(); }},
+      {fb:'journal',  ls:'tradestat_pro_journal_v1', reload: () => { if(typeof loadJournal==='function') loadJournal(); if(typeof renderJournal==='function') renderJournal(); }},
+    ];
+    syncKeys.forEach(k => {
+      const unsub = onSnapshot(doc(db, 'users', uid, 'data', k.fb), (snap) => {
+        if (!snap.exists()) return;
+        if (window.__ignoreNextSnapshot && window.__ignoreNextSnapshot[k.fb]) {
+          window.__ignoreNextSnapshot[k.fb] = false;
+          return;
+        }
+        const newV = snap.data().v;
+        const lsV = localStorage.getItem(k.ls);
+        if (newV !== lsV) {
+          localStorage.setItem(k.ls, newV);
+          k.reload();
+          console.log(`[FB sync] ${k.fb} updated from external source`);
+        }
+      }, (err) => console.warn(`[FB sync] ${k.fb} error:`, err));
+      window.__fbUnsubscribers.push(unsub);
+    });
+
   } else {
     window.__userLoggedIn = false;
-    // Při odhlášení: vymazat localStorage A zrušit ready stav
+    // Při odhlášení: unsubscribe všechny Firestore listenery, vymazat localStorage, zrušit ready stav
+    if (window.__fbUnsubscribers) {
+      window.__fbUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} });
+      window.__fbUnsubscribers = [];
+    }
     LS_KEYS.forEach(k => localStorage.removeItem(k));
     document.body.classList.remove('app-ready');
     const existingBar = document.getElementById('auth-user-bar');
@@ -1230,7 +1267,11 @@ onAuthStateChanged(auth, async (user) => {
 window.__fbSave = async (key, data) => {
   try {
     const uid = auth.currentUser?.uid;
-    if (uid) await setDoc(doc(db, 'users', uid, 'data', key), {v: JSON.stringify(data)});
+    if (!uid) return;
+    // Mark this key as "self-write" so the snapshot listener doesn't echo it back as a remote change
+    if (!window.__ignoreNextSnapshot) window.__ignoreNextSnapshot = {};
+    window.__ignoreNextSnapshot[key] = true;
+    await setDoc(doc(db, 'users', uid, 'data', key), {v: JSON.stringify(data)});
   } catch(e) { console.warn('FB save:', e); }
 };
 window.__fbLoad = async () => {};

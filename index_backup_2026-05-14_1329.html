@@ -2697,6 +2697,7 @@ window.LivePrices = (function(){
     persistCache();
     renderUI();
     if (typeof renderOpenPositions === 'function') renderOpenPositions();
+    if (typeof renderKPIs === 'function') renderKPIs();
   }
 
   function startTimer() {
@@ -3318,8 +3319,29 @@ function renderKPIs() {
   const wr = closed.length ? (wins.length/closed.length*100).toFixed(1) : 0;
   const exp = closed.length ? ((wins.length/closed.length)*avgWin + (losses.length/closed.length)*avgLoss).toFixed(2) : 0;
 
+  // Compute unrealized P/L from live quotes on currently-open positions
+  let unrealized = 0;
+  let unrealizedCount = 0;
+  const LP = window.LivePrices;
+  if (LP) {
+    getOpen().forEach(t => {
+      const q = LP.getQuote ? LP.getQuote(t) : null;
+      if (q && t.open_price && t.invested) {
+        const units = t.units || (t.invested / t.open_price);
+        unrealized += (q.price - t.open_price) * units;
+        unrealizedCount++;
+      }
+    });
+  }
+  const totalIncOpen = pl + unrealized;
+  const hasLive = unrealizedCount > 0;
+  const allInSub = hasLive
+    ? `realiz. ${pl>=0?'+':''}$${pl.toFixed(0)} + unrealiz. ${unrealized>=0?'+':''}$${unrealized.toFixed(0)} (${unrealizedCount}/${getOpen().length} poz.)`
+    : 'aktivuj live ceny → ⚙ v Otevřené pozice';
+
   const kpis = [
-    {label:'Celkový P&L', val: fmt$round(pl), sub:'realizovaný zisk/ztráta', cls: clr(pl)},
+    {label:'Realizovaný P&L', val: fmt$round(pl), sub:'pouze uzavřené trady', cls: clr(pl)},
+    {label:'Celkem vč. otevřených', val: fmt$round(totalIncOpen), sub: allInSub, cls: hasLive ? clr(totalIncOpen) : 'neutral'},
     {label:'Win Rate', val: wr+'%', sub:`${wins.length} výher / ${losses.length} ztrát`, cls:'neutral'},
     {label:'Profit Factor', val: pf+'×', sub:'výhry / ztráty celkem', cls:'violet-color'},
     {label:'Avg výhra', val: fmt$round(avgWin), sub:`průměr z ${wins.length} výher`, cls:'positive'},
@@ -5849,7 +5871,7 @@ function renderGoals() {
   });
 
   document.getElementById('goalsKpiGrid').innerHTML = [
-    {label:'Celkový P&L', val: fmt$round(totalPLval), sub:'realizovaný zisk/ztráta', cls: clr(totalPLval)},
+    {label:'Realizovaný P&L', val: fmt$round(totalPLval), sub:'pouze uzavřené trady', cls: clr(totalPLval)},
     {label:'Aktivní cíle', val: active.length, sub:'do termínu zbývá čas', cls:'neutral'},
     {label:'Splněné cíle', val: done.length, sub:`z ${goals.length} celkem`, cls:'positive'},
     {label:'Uzavřené trady', val: getClosed().length, sub:'jako základ P&L', cls:'violet-color'},
