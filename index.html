@@ -2798,6 +2798,9 @@ window.LivePrices = (function(){
     renderUI();
     if (typeof renderOpenPositions === 'function') renderOpenPositions();
     if (typeof renderKPIs === 'function') renderKPIs();
+    // If goals tab is currently shown, refresh it too so unrealized P/L updates live
+    const goalsTab = document.getElementById('tab-goals');
+    if (goalsTab && goalsTab.classList.contains('active') && typeof renderGoals === 'function') renderGoals();
   }
 
   function startTimer() {
@@ -5895,6 +5898,24 @@ function getTotalPL(startDate, endDate) {
   }).reduce((s,t) => s + (t.pl || 0), 0);
 }
 
+/* Unrealized P/L from open positions whose open_date falls in the goal range,
+   valued at the current live price (or $0 if no quote available). */
+function getUnrealizedPL(startDate, endDate) {
+  const LP = window.LivePrices;
+  if (!LP) return 0;
+  let total = 0;
+  getOpen().forEach(t => {
+    if (!t.open_date || !t.open_price || !t.invested) return;
+    if (startDate && t.open_date < startDate) return;
+    if (endDate && t.open_date > endDate) return;
+    const q = LP.getQuote(t);
+    if (!q) return;
+    const units = t.units || (t.invested / t.open_price);
+    total += (q.price - t.open_price) * units;
+  });
+  return total;
+}
+
 function addGoal() {
   const name = document.getElementById('g_name').value.trim();
   const target = parseFloat(document.getElementById('g_target').value);
@@ -5965,7 +5986,22 @@ function renderGoals() {
   const today = new Date().toISOString().slice(0,10);
   const totalPLval = getClosed().reduce((s,t) => s + (t.pl||0), 0);
 
+  // Total unrealized across all open positions (used in headline KPI)
+  let totalUnrealized = 0;
+  const LP = window.LivePrices;
+  if (LP) {
+    getOpen().forEach(t => {
+      if (!t.open_price || !t.invested) return;
+      const q = LP.getQuote(t);
+      if (!q) return;
+      const units = t.units || (t.invested / t.open_price);
+      totalUnrealized += (q.price - t.open_price) * units;
+    });
+  }
+  const totalCurrent = totalPLval + totalUnrealized;
+
   const active = goals.filter(g => g.deadline >= today);
+  // "Splněné" = achieved by realized P/L alone (stable state, doesn't un-achieve when prices drop)
   const done = goals.filter(g => {
     const pl = getTotalPL(g.start, g.deadline);
     return pl >= g.target;
@@ -5973,9 +6009,9 @@ function renderGoals() {
 
   document.getElementById('goalsKpiGrid').innerHTML = [
     {label:'Realizovaný P&L', val: fmt$round(totalPLval), sub:'pouze uzavřené trady', cls: clr(totalPLval)},
+    {label:'Celkem vč. otevřených', val: fmt$round(totalCurrent), sub: totalUnrealized !== 0 ? `unrealiz. ${totalUnrealized>=0?'+':''}$${totalUnrealized.toFixed(0)}` : 'aktivuj live ceny', cls: LP && totalUnrealized !== 0 ? clr(totalCurrent) : 'neutral'},
     {label:'Aktivní cíle', val: active.length, sub:'do termínu zbývá čas', cls:'neutral'},
-    {label:'Splněné cíle', val: done.length, sub:`z ${goals.length} celkem`, cls:'positive'},
-    {label:'Uzavřené trady', val: getClosed().length, sub:'jako základ P&L', cls:'violet-color'},
+    {label:'Splněné cíle', val: done.length, sub:`z ${goals.length} celkem (realiz.)`, cls:'positive'},
   ].map(k =>
     `<div class="kpi glass">
       <div class="kpi-label">${k.label}</div>
@@ -5990,10 +6026,13 @@ function renderGoals() {
   }
 
   document.getElementById('goalsList').innerHTML = goals.map(g => {
-    const pl = getTotalPL(g.start, g.deadline);
+    const realized = getTotalPL(g.start, g.deadline);
+    const unrealized = getUnrealizedPL(g.start, g.deadline);
+    const pl = realized + unrealized;                 // total = used for progress
     const pct = Math.min((pl / g.target) * 100, 100);
     const remaining = g.target - pl;
-    const isAchieved = pl >= g.target;
+    // "Achieved" stays based on REALIZED only — so a goal doesn't un-achieve when prices drop.
+    const isAchieved = realized >= g.target;
 
     const now = new Date();
     const startD = g.start ? new Date(g.start) : null;
@@ -6056,8 +6095,9 @@ function renderGoals() {
 
       <div class="goal-metrics">
         <div class="goal-metric">
-          <div class="l">Aktuální P&L</div>
+          <div class="l">Aktuální P&L${unrealized !== 0 ? ' (vč. otevřených)' : ''}</div>
           <div class="v" style="color:${pl>=0?'var(--win)':'var(--loss)'}">${pl>=0?'+':''}$${pl.toFixed(0)}</div>
+          ${unrealized !== 0 ? `<div style="font-size:10px;color:var(--muted);font-family:var(--fira);margin-top:2px">${realized>=0?'+':''}$${realized.toFixed(0)} realiz. · ${unrealized>=0?'+':''}$${unrealized.toFixed(0)} unr.</div>` : ''}
         </div>
         <div class="goal-metric">
           <div class="l">Cíl</div>
