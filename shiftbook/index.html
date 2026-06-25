@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Shiftbook — Evidence směn</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* paper */
+  --paper:#f7f4ec;
+  --paper-2:#efeadd;
+  --surface:#ffffff;
+  --surface-2:#fbfaf6;
+
+  /* ink */
+  --ink:#1a1a1a;
+  --ink-2:#3a3a38;
+  --ink-3:#6b6962;
+  --ink-4:#9c9a90;
+  --ink-5:#c4c1b5;
+
+  /* lines */
+  --line:#e7e2d4;
+  --line-2:#d8d2c0;
+
+  /* sage — money / primary */
+  --sage:#3f7a5a;
+  --sage-2:#2f5d44;
+  --sage-soft:#e7f1eb;
+  --sage-ink:#1d3b2b;
+
+  /* amber — time / hours */
+  --amber:#b07020;
+  --amber-2:#8a5418;
+  --amber-soft:#f7eed9;
+
+  /* rose — emphasis / danger */
+  --rose:#b3463c;
+  --rose-soft:#f5e1de;
+
+  /* clay — neutral accent */
+  --clay:#7a6a52;
+  --clay-soft:#ece5d4;
+
+  --radius-sm:6px;
+  --radius:10px;
+  --radius-lg:18px;
+
+  --shadow-1:0 1px 0 rgba(20,18,10,0.04), 0 1px 2px rgba(20,18,10,0.04);
+  --shadow-2:0 1px 0 rgba(20,18,10,0.05), 0 4px 14px rgba(20,18,10,0.06);
+  --shadow-3:0 12px 36px rgba(20,18,10,0.12);
+
+  --serif:'Instrument Serif',serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{overflow-x:hidden;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* subtle paper texture */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.5;
+  background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.36  0 0 0 0 0.25  0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+/* warm soft gradient at top */
+body::after{
+  content:'';position:fixed;inset:0 0 auto 0;height:60vh;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(176,112,32,0.07), transparent 60%);
+}
+
+.app{
+  position:relative;z-index:1;
+  max-width:1180px;margin:0 auto;padding:28px 22px 120px;
+}
+
+/* ─── HEADER ──────────────────────────────────── */
+header.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  margin-bottom:28px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:13px;}
+.brand-mark{
+  width:42px;height:42px;border-radius:10px;
+  background:linear-gradient(180deg,#4b8e6a 0%,#2f5d44 100%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 0 rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.18);
+  color:#fff;
+}
+.brand-mark svg{width:22px;height:22px;}
+.brand-text .title{
+  font-family:var(--serif);font-size:30px;font-weight:400;
+  letter-spacing:-0.01em;line-height:1;color:var(--ink);
+}
+.brand-text .title em{font-style:italic;color:var(--sage);}
+.brand-text .sub{
+  font-size:10px;color:var(--ink-4);
+  letter-spacing:0.22em;text-transform:uppercase;margin-top:5px;font-weight:600;
+}
+
+.header-stats{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:2px;overflow:hidden;
+  box-shadow:var(--shadow-1);
+}
+.header-stat{
+  padding:8px 16px;display:flex;flex-direction:column;gap:1px;
+  border-right:1px solid var(--line);min-width:96px;
+}
+.header-stat:last-child{border-right:none;}
+.header-stat .label{
+  font-size:9px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.2em;font-weight:700;
+}
+.header-stat .val{
+  font-family:var(--mono);font-size:15px;font-weight:600;letter-spacing:-0.01em;color:var(--ink);
+}
+.header-stat .val.sage{color:var(--sage);}
+.header-stat .val.amber{color:var(--amber);}
+
+/* ─── TABS ─────────────────────────────────────── */
+.tabs{
+  display:flex;gap:2px;margin-bottom:24px;flex-wrap:wrap;align-items:center;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--radius);padding:4px;
+  position:sticky;top:8px;z-index:50;box-shadow:var(--shadow-1);
+}
+.tab{
+  padding:8px 16px;border-radius:7px;cursor:pointer;
+  font-family:var(--sans);font-size:13px;font-weight:500;
+  color:var(--ink-3);transition:all .18s ease;
+  border:none;background:transparent;white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+}
+.tab:hover:not(.active){color:var(--ink);background:var(--paper-2);}
+.tab.active{
+  color:#fff;
+  background:var(--sage);
+  box-shadow:0 1px 0 rgba(0,0,0,0.06);
+}
+.tab.add{margin-left:auto;color:var(--sage);font-weight:600;}
+.tab.add.active{background:var(--ink);color:#fff;}
+.tab svg{width:14px;height:14px;}
+
+.section{display:none;animation:fadeUp .3s ease;}
+.section.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── CARD ────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-1);
+  padding:22px;
+  margin-bottom:14px;
+}
+
+.card-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line);
+}
+.card-title{
+  font-family:var(--serif);font-size:22px;font-weight:400;
+  letter-spacing:-0.01em;color:var(--ink);
+  display:flex;align-items:center;gap:8px;line-height:1.1;
+}
+.card-title em{font-style:italic;color:var(--sage);}
+.card-sub{font-size:12px;color:var(--ink-4);font-family:var(--mono);}
+
+/* ─── HERO ────────────────────────────────────── */
+.hero{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  padding:32px;margin-bottom:14px;
+  box-shadow:var(--shadow-2);
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'';position:absolute;top:0;right:0;width:280px;height:280px;
+  background:radial-gradient(circle,rgba(63,122,90,0.08),transparent 60%);
+  pointer-events:none;
+}
+.hero-label{
+  font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.22em;font-weight:700;
+  margin-bottom:10px;
+}
+.hero-value{
+  font-family:var(--serif);font-size:64px;font-weight:400;
+  letter-spacing:-0.025em;line-height:1;color:var(--ink);
+  margin-bottom:14px;
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+}
+.hero-value .currency{font-size:36px;color:var(--ink-4);font-style:italic;}
+.hero-meta{
+  display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--ink-3);
+}
+.hero-meta strong{color:var(--ink);font-weight:600;}
+.hero-meta .pip{
+  display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--sage);
+  margin-right:7px;vertical-align:middle;
+}
+.hero-meta .pip.amber{background:var(--amber);}
+.hero-meta .pip.clay{background:var(--clay);}
+
+/* ─── KPI GRID ────────────────────────────────── */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;margin-bottom:14px;
+}
+.kpi{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  box-shadow:var(--shadow-1);
+  transition:all .2s ease;
+  position:relative;
+}
+.kpi:hover{border-color:var(--line-2);transform:translateY(-1px);box-shadow:var(--shadow-2);}
+.kpi-label{
+  font-size:10px;color:var(--ink-4);text-transform:uppercase;
+  letter-spacing:0.2em;font-weight:700;margin-bottom:8px;
+}
+.kpi-value{
+  font-family:var(--serif);font-size:28px;font-weight:400;letter-spacing:-0.02em;
+  line-height:1.05;margin-bottom:4px;color:var(--ink);
+}
+.kpi-value .currency{font-size:18px;color:var(--ink-4);font-style:italic;margin-left:2px;}
+.kpi-sub{font-size:11px;color:var(--ink-3);font-family:var(--mono);}
+
+.kpi.accent{background:var(--sage-soft);border-color:rgba(63,122,90,0.18);}
+.kpi.accent .kpi-value{color:var(--sage-ink);}
+.kpi.accent .kpi-label{color:var(--sage-2);}
+.kpi.accent .kpi-sub{color:var(--sage-2);}
+
+/* ─── LAYOUT ──────────────────────────────────── */
+.two-one{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:900px){.two-one,.two-col{grid-template-columns:1fr;}}
+
+.chart-wrap{position:relative;width:100%;height:300px;}
+
+/* ─── TABLE ───────────────────────────────────── */
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.search-box{
+  background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+  padding:9px 14px;border-radius:8px;
+  font-family:var(--sans);font-size:13px;
+  outline:none;width:240px;transition:all .15s;
+}
+.search-box::placeholder{color:var(--ink-4);}
+.search-box:focus{border-color:var(--sage);background:#fff;box-shadow:0 0 0 3px rgba(63,122,90,0.1);}
+
+.chip{
+  padding:7px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink-3);font-size:12px;font-weight:500;
+  transition:all .15s;white-space:nowrap;font-family:var(--sans);
+}
+.chip:hover:not(.active){border-color:var(--line-2);color:var(--ink);}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -22px;padding:0 22px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{
+  text-align:left;padding:10px 14px 10px 0;color:var(--ink-4);
+  font-size:10px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;
+  border-bottom:1px solid var(--line);white-space:nowrap;
+  cursor:pointer;user-select:none;transition:color .12s;
+  font-family:var(--sans);
+}
+th:first-child{padding-left:0;}
+th:hover{color:var(--ink);}
+th.sort-active{color:var(--sage);}
+td{
+  padding:14px 14px 14px 0;border-bottom:1px solid var(--line);
+  white-space:nowrap;font-size:13px;font-family:var(--sans);color:var(--ink-2);vertical-align:middle;
+}
+td:first-child{padding-left:0;}
+tbody tr{transition:background .1s;}
+tbody tr:hover td{background:var(--paper);}
+tbody tr:last-child td{border-bottom:none;}
+
+.td-num{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.td-money{font-family:var(--mono);font-weight:600;color:var(--sage);font-variant-numeric:tabular-nums;}
+.td-date strong{color:var(--ink);font-weight:600;}
+.td-date .dow{color:var(--ink-4);margin-left:4px;font-size:12px;}
+.td-note{font-family:var(--sans);color:var(--ink-3);max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+
+.empty-state{
+  padding:60px 20px;text-align:center;color:var(--ink-3);
+}
+.empty-state .icon{font-size:38px;margin-bottom:14px;opacity:0.4;}
+.empty-state h3{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--ink);margin-bottom:6px;}
+.empty-state p{font-size:13px;}
+
+/* ─── FORM ────────────────────────────────────── */
+.form-card{padding:28px;}
+.form-title{
+  font-family:var(--serif);font-size:30px;font-weight:400;
+  margin-bottom:4px;letter-spacing:-0.02em;line-height:1.1;
+}
+.form-title em{font-style:italic;color:var(--sage);}
+.form-sub{font-size:13px;color:var(--ink-3);margin-bottom:24px;}
+.form-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px;margin-bottom:22px;
+}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{
+  font-size:11px;color:var(--ink-3);
+  font-weight:600;font-family:var(--sans);
+}
+.form-input,.form-select,.form-textarea{
+  background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+  padding:11px 14px;border-radius:8px;
+  font-family:var(--mono);font-size:13px;font-weight:500;
+  outline:none;transition:all .15s;width:100%;
+  -webkit-appearance:none;appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--sage);background:#fff;
+  box-shadow:0 0 0 3px rgba(63,122,90,0.1);
+}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--ink-4);}
+.form-textarea{font-family:var(--sans);min-height:62px;resize:vertical;}
+.form-select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c9a90' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+}
+.form-select option{background:#fff;color:var(--ink);}
+input[type="date"],input[type="time"],input[type="number"]{color-scheme:light;}
+
+.form-preview{
+  background:linear-gradient(180deg,var(--sage-soft) 0%,#fff 100%);
+  border:1px solid rgba(63,122,90,0.18);
+  border-radius:12px;padding:18px 22px;margin-bottom:22px;
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+}
+.form-preview .pv{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px;}
+.form-preview .pv-label{
+  font-size:10px;text-transform:uppercase;letter-spacing:0.2em;
+  color:var(--ink-3);font-weight:700;
+}
+.form-preview .pv-val{font-family:var(--serif);font-size:26px;font-weight:400;letter-spacing:-0.02em;color:var(--ink);}
+.form-preview .pv-val.sage{color:var(--sage);}
+.form-preview .pv-val.amber{color:var(--amber);}
+.form-preview .pv-val .currency{font-size:16px;color:var(--ink-4);font-style:italic;}
+
+.form-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.btn{
+  padding:11px 22px;border:1px solid transparent;border-radius:8px;cursor:pointer;
+  font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0;
+  transition:all .15s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary{
+  background:var(--sage);color:#fff;border-color:var(--sage);
+  box-shadow:0 1px 0 rgba(0,0,0,0.05);
+}
+.btn-primary:hover{background:var(--sage-2);border-color:var(--sage-2);}
+.btn-secondary{
+  background:var(--surface);color:var(--ink-2);border-color:var(--line-2);
+  box-shadow:0 1px 0 rgba(0,0,0,0.03);
+}
+.btn-secondary:hover{background:var(--paper-2);color:var(--ink);}
+.btn-danger{
+  background:#fff;color:var(--rose);border-color:rgba(179,70,60,0.3);
+}
+.btn-danger:hover{background:var(--rose-soft);border-color:var(--rose);}
+
+.act-btn{
+  padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;
+  border:1px solid var(--line);background:var(--surface);
+  color:var(--ink-3);cursor:pointer;transition:all .12s;
+  display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);
+}
+.act-btn:hover{border-color:var(--sage);color:var(--sage);background:var(--sage-soft);}
+.act-btn.del:hover{border-color:var(--rose);color:var(--rose);background:var(--rose-soft);}
+
+/* ─── TOAST ────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--ink);color:#fff;
+  padding:12px 22px;border-radius:10px;font-size:13px;font-weight:500;
+  box-shadow:var(--shadow-3);z-index:1000;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;align-items:center;gap:10px;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--sage);}
+.toast.error::before{background:var(--rose);}
+
+/* ─── CALENDAR (heatmap-ish) ──────────────────── */
+.cal-wrap{padding:6px 0;}
+.cal-head{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;
+}
+.cal-head-cell{
+  font-size:10px;color:var(--ink-4);text-transform:uppercase;
+  letter-spacing:0.18em;font-weight:700;text-align:center;
+}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+.cal-day{
+  aspect-ratio:1;border-radius:8px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  padding:6px 8px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;
+  min-height:60px;
+}
+.cal-day:hover{border-color:var(--line-2);transform:translateY(-1px);}
+.cal-day.empty{opacity:0.35;}
+.cal-day.future{opacity:0.35;}
+.cal-day.future.empty-future{pointer-events:none;}
+.cal-day .cal-num{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:600;}
+.cal-day .cal-h{font-family:var(--serif);font-size:16px;color:var(--ink);font-weight:400;line-height:1;}
+.cal-day .cal-money{font-size:10px;color:var(--ink-3);font-family:var(--mono);font-weight:500;margin-top:1px;}
+.cal-day.has{background:var(--sage-soft);border-color:rgba(63,122,90,0.22);}
+.cal-day.has .cal-num{color:var(--sage-2);}
+.cal-day.has .cal-h{color:var(--sage-ink);}
+.cal-day.has .cal-money{color:var(--sage-2);}
+.cal-day.future.has{
+  background:var(--amber-soft);
+  border-color:rgba(176,112,32,0.4);
+  border-style:dashed;
+  opacity:1;
+}
+.cal-day.future.has .cal-num,
+.cal-day.future.has .cal-h,
+.cal-day.future.has .cal-money{color:var(--amber-2);}
+.cal-day.today{box-shadow:0 0 0 2px var(--amber);}
+
+.cal-legend{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11px;color:var(--ink-3);font-family:var(--sans);
+}
+.cal-legend .lg{display:inline-flex;align-items:center;gap:6px;}
+.cal-legend .sw{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid transparent;}
+.cal-legend .sw.done{background:var(--sage-soft);border-color:rgba(63,122,90,0.22);}
+.cal-legend .sw.planned{background:var(--amber-soft);border-color:rgba(176,112,32,0.4);border-style:dashed;}
+.cal-legend .sw.today{background:transparent;box-shadow:0 0 0 2px var(--amber);}
+
+/* ─── UPCOMING ─────────────────────────────── */
+.up-list{display:flex;flex-direction:column;gap:8px;}
+.up-row{
+  display:flex;align-items:center;gap:14px;
+  padding:13px 16px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:9px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.up-row:hover{border-color:var(--amber);background:var(--amber-soft);transform:translateY(-1px);}
+.up-row.is-today{
+  background:linear-gradient(180deg,var(--amber-soft) 0%,var(--surface-2) 100%);
+  border-color:var(--amber);
+}
+.up-row.is-today .up-rel{color:var(--rose);}
+.up-date{min-width:140px;display:flex;flex-direction:column;gap:3px;}
+.up-date strong{font-size:14px;color:var(--ink);font-weight:600;}
+.up-rel{
+  font-size:10px;color:var(--amber-2);text-transform:uppercase;
+  letter-spacing:0.18em;font-weight:700;
+}
+.up-time{
+  flex:1;font-family:var(--mono);font-size:13px;color:var(--ink-2);
+  font-variant-numeric:tabular-nums;
+}
+.up-time .dur{color:var(--ink-4);margin-left:8px;}
+.up-time .note{color:var(--ink-4);margin-left:8px;font-family:var(--sans);font-size:12px;}
+.up-earned{
+  font-family:var(--mono);font-size:14px;font-weight:600;color:var(--sage);
+  font-variant-numeric:tabular-nums;text-align:right;min-width:80px;
+}
+.up-empty{
+  padding:36px 16px;text-align:center;color:var(--ink-3);
+}
+.up-empty .icon{font-size:30px;opacity:0.4;margin-bottom:8px;}
+
+@media (max-width:640px){
+  .up-row{padding:11px 13px;gap:10px;}
+  .up-date{min-width:0;flex-shrink:0;}
+  .up-date strong{font-size:13px;}
+  .up-time{font-size:12px;overflow:hidden;text-overflow:ellipsis;}
+  .up-time .dur,.up-time .note{display:none;}
+  .up-earned{font-size:13px;min-width:0;}
+}
+
+.cal-nav{display:flex;align-items:center;gap:10px;}
+.cal-nav button{
+  width:28px;height:28px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;
+}
+.cal-nav button:hover{border-color:var(--sage);color:var(--sage);}
+.cal-nav button svg{width:14px;height:14px;}
+.cal-nav .cal-label{
+  font-family:var(--serif);font-size:18px;font-weight:400;
+  letter-spacing:-0.01em;min-width:140px;text-align:center;color:var(--ink);
+}
+
+/* ─── BREAKDOWN BARS ──────────────────────────── */
+.bd-row{
+  display:flex;align-items:center;gap:14px;padding:11px 0;
+  border-bottom:1px solid var(--line);
+}
+.bd-row:last-child{border-bottom:none;}
+.bd-name{
+  width:90px;font-size:13px;color:var(--ink);flex-shrink:0;font-weight:500;
+}
+.bd-bar-wrap{flex:1;background:var(--paper-2);border-radius:4px;height:8px;overflow:hidden;min-width:30px;position:relative;}
+.bd-bar{
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,var(--sage),#5a9b78);
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+.bd-val{width:90px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+.bd-sub{width:42px;text-align:right;font-size:11px;color:var(--ink-4);font-family:var(--mono);}
+
+/* ─── SETTINGS ────────────────────────────────── */
+.set-list{
+  display:flex;flex-direction:column;
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface);
+}
+.set-row{
+  padding:14px 18px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.set-row:last-child{border-bottom:none;}
+.set-row .set-label{font-size:13px;font-weight:600;color:var(--ink);}
+.set-row .set-desc{font-size:12px;color:var(--ink-3);margin-top:2px;}
+.set-row .set-control{display:flex;gap:8px;align-items:center;}
+.set-row .form-input,.set-row .form-select{width:auto;min-width:130px;}
+
+/* ─── FAB (mobile add) ─────────────────────────── */
+.fab{
+  position:fixed;bottom:24px;right:24px;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--sage);color:#fff;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(63,122,90,0.4), 0 1px 0 rgba(0,0,0,0.1);
+  z-index:90;transition:all .2s;display:none;
+}
+.fab:hover{background:var(--sage-2);transform:scale(1.05);}
+.fab svg{width:24px;height:24px;}
+
+/* ─── MOBILE ─────────────────────────────────── */
+@media (max-width:640px){
+  .app{padding:20px 16px 100px;}
+  header.topbar{margin-bottom:20px;}
+  .brand-text .title{font-size:24px;}
+  .header-stats{width:100%;}
+  .header-stat{padding:7px 10px;min-width:0;flex:1;}
+  .header-stat .val{font-size:13px;}
+  .header-stat .label{font-size:8px;letter-spacing:0.15em;}
+  .tabs{padding:3px;gap:1px;}
+  .tab{padding:8px 11px;font-size:12px;}
+  .tab span.tab-label{display:none;}
+  .tab.add span.tab-label{display:inline;}
+  .hero{padding:24px 22px;}
+  .hero-value{font-size:46px;}
+  .hero-value .currency{font-size:24px;}
+  .hero-meta{gap:14px;font-size:12px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .kpi{padding:14px;}
+  .kpi-value{font-size:24px;}
+  .card{padding:18px;}
+  .card-head{margin-bottom:14px;padding-bottom:10px;}
+  .card-title{font-size:18px;}
+  .form-card{padding:22px 18px;}
+  .form-title{font-size:24px;}
+  .form-grid{grid-template-columns:1fr 1fr;}
+  th,td{padding:11px 10px 11px 0;font-size:12px;}
+  .search-box{width:100%;}
+  .chart-wrap{height:240px;}
+  .bd-name{width:72px;font-size:12px;}
+  .bd-val{width:72px;font-size:12px;}
+  .table-wrap{margin:0 -18px;padding:0 18px;}
+  .cal-day{padding:4px 5px;min-height:48px;}
+  .cal-day .cal-num{font-size:10px;}
+  .cal-day .cal-h{font-size:13px;}
+  .cal-day .cal-money{font-size:9px;}
+  .fab{display:flex;}
+}
+@media (max-width:380px){
+  .kpi-grid{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .hero-value{font-size:38px;}
+}
+
+/* ─── AUTH OVERLAY ──────────────────────────── */
+#auth-overlay{
+  position:fixed;inset:0;background:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:99999;gap:14px;
+  font-family:var(--sans);color:var(--ink);
+}
+#auth-overlay .ov-mark{
+  width:64px;height:64px;border-radius:16px;
+  background:linear-gradient(180deg,#4b8e6a 0%,#2f5d44 100%);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  box-shadow:0 8px 24px rgba(63,122,90,0.3);
+  margin-bottom:6px;
+}
+#auth-overlay .ov-mark svg{width:32px;height:32px;}
+#auth-overlay .ov-title{
+  font-family:var(--serif);font-size:36px;font-weight:400;letter-spacing:-0.02em;line-height:1;
+}
+#auth-overlay .ov-title em{font-style:italic;color:var(--sage);}
+#auth-overlay .ov-msg{font-size:13px;color:var(--ink-3);}
+#auth-overlay .ov-spinner{
+  width:26px;height:26px;border:2px solid var(--line);
+  border-top-color:var(--sage);border-radius:50%;
+  animation:ov-spin 0.8s linear infinite;margin-top:6px;
+}
+@keyframes ov-spin{ to { transform:rotate(360deg); } }
+body.app-ready #auth-overlay{ display:none; }
+
+/* ─── USER BAR ──────────────────────────────── */
+#user-bar{
+  position:fixed;top:14px;right:14px;z-index:90;
+  display:none;align-items:center;gap:4px;
+  padding:4px 4px 4px 4px;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:32px;
+  font-size:12px;color:var(--ink-3);
+  box-shadow:var(--shadow-1);
+}
+#user-bar a.back{
+  display:flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;
+  color:var(--ink-3);text-decoration:none;
+  transition:background .15s;
+}
+#user-bar a.back:hover{background:var(--paper-2);color:var(--ink);}
+#user-bar a.back svg{width:14px;height:14px;}
+#user-bar .photo{
+  width:26px;height:26px;border-radius:50%;background:var(--paper-2);
+}
+#user-bar .name{padding:0 8px 0 4px;font-weight:500;color:var(--ink);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#user-bar button.logout{
+  background:none;border:none;color:var(--ink-4);
+  cursor:pointer;padding:0;border-radius:50%;
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;font-size:14px;font-family:inherit;
+}
+#user-bar button.logout:hover{background:var(--rose-soft);color:var(--rose);}
+@media(max-width:640px){
+  #user-bar{top:10px;right:10px;}
+  #user-bar .name{display:none;}
+  /* dej hlavičce místo pro user bar */
+  header.topbar .header-stats{margin-top:0;}
+}
+</style>
+
+<!-- Firebase Cloud Sync -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const LS_KEYS = ['shiftbook.shifts.v1', 'shiftbook.settings.v1'];
+
+const fb = initializeApp({
+  apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",
+  authDomain:"tradestat-18e24.firebaseapp.com",
+  projectId:"tradestat-18e24",
+  storageBucket:"tradestat-18e24.firebasestorage.app",
+  messagingSenderId:"1081488272976",
+  appId:"1:1081488272976:web:65156e690afc02bb682b55"
+});
+const db = getFirestore(fb);
+const auth = getAuth(fb);
+
+function setOvMsg(msg){
+  const m = document.querySelector('#auth-overlay .ov-msg');
+  if (m) m.textContent = msg;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user){
+    // Nepřihlášený → zpět do launcheru
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+    location.replace('../');
+    return;
+  }
+
+  const uid = user.uid;
+  setOvMsg('Načítám tvá data…');
+
+  // Začni s čistým localStorage, abychom nezobrazili cizí data
+  LS_KEYS.forEach(k => localStorage.removeItem(k));
+
+  const map = [
+    {fb:'shifts',         ls:'shiftbook.shifts.v1'},
+    {fb:'shift_settings', ls:'shiftbook.settings.v1'}
+  ];
+
+  for (const k of map){
+    try {
+      const snap = await getDoc(doc(db, 'users', uid, 'data', k.fb));
+      if (snap.exists()) localStorage.setItem(k.ls, snap.data().v);
+    } catch(e){ console.warn('[FB load]', k.fb, e); }
+  }
+
+  // Refresh in-memory state & UI
+  try { if (typeof window.load === 'function') window.load(); } catch(e){ console.error(e); }
+  try { if (typeof window.bindSettings === 'function') window.bindSettings(); } catch(e){ console.error(e); }
+  try { if (typeof window.resetForm === 'function') window.resetForm(); } catch(e){ console.error(e); }
+  try { if (typeof window.render === 'function') window.render(); } catch(e){ console.error(e); }
+
+  // Show user bar
+  const bar = document.getElementById('user-bar');
+  if (bar){
+    const ph = document.getElementById('user-photo');
+    const nm = document.getElementById('user-name');
+    if (user.photoURL){ ph.src = user.photoURL; ph.style.display = 'block'; }
+    else ph.style.display = 'none';
+    nm.textContent = user.displayName || user.email;
+    bar.style.display = 'flex';
+  }
+
+  // Real-time sync
+  if (window.__fbUnsubs) window.__fbUnsubs.forEach(u => { try{ u(); }catch(e){} });
+  window.__fbUnsubs = [];
+  map.forEach(k => {
+    const unsub = onSnapshot(doc(db, 'users', uid, 'data', k.fb), (snap) => {
+      if (!snap.exists()) return;
+      if (window.__ignoreNext && window.__ignoreNext[k.fb]){
+        window.__ignoreNext[k.fb] = false;
+        return;
+      }
+      const newV = snap.data().v;
+      const lsV = localStorage.getItem(k.ls);
+      if (newV !== lsV){
+        localStorage.setItem(k.ls, newV);
+        try { if (typeof window.load === 'function') window.load(); } catch(e){}
+        try { if (typeof window.render === 'function') window.render(); } catch(e){}
+        console.log(`[FB sync] ${k.fb} updated from another device`);
+      }
+    }, (err) => console.warn(`[FB sync] ${k.fb} error:`, err));
+    window.__fbUnsubs.push(unsub);
+  });
+
+  // Save hook used by Shiftbook's save()
+  window.__fbSave = async (key, data) => {
+    try {
+      if (!window.__ignoreNext) window.__ignoreNext = {};
+      window.__ignoreNext[key] = true;
+      await setDoc(doc(db, 'users', uid, 'data', key), {v: JSON.stringify(data)});
+    } catch(e){ console.warn('[FB save]', key, e); }
+  };
+
+  // Reveal app
+  document.body.classList.add('app-ready');
+});
+
+// Logout
+window.__signOut = () => {
+  if (confirm('Odhlásit se?')){
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+    signOut(auth);
+  }
+};
+</script>
+</head>
+<body>
+
+<div id="auth-overlay">
+  <div class="ov-mark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <polyline points="12 7 12 12 15 14"/>
+    </svg>
+  </div>
+  <div class="ov-title">Shift<em>book</em></div>
+  <div class="ov-msg">Načítám…</div>
+  <div class="ov-spinner"></div>
+</div>
+
+<div id="user-bar">
+  <a class="back" href="../" title="Zpět na výběr aplikací">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <img class="photo" id="user-photo" alt="">
+  <span class="name" id="user-name">—</span>
+  <button class="logout" id="logout-btn" title="Odhlásit">✕</button>
+</div>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 14"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="title">Shift<em>book</em></div>
+        <div class="sub">Evidence směn</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="label">Celkem</div>
+        <div class="val sage" id="hs-total">0 Kč</div>
+      </div>
+      <div class="header-stat">
+        <div class="label">Měsíc</div>
+        <div class="val" id="hs-month">0 Kč</div>
+      </div>
+      <div class="header-stat">
+        <div class="label">Hodin</div>
+        <div class="val amber" id="hs-hours">0 h</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+      <span class="tab-label">Přehled</span>
+    </button>
+    <button class="tab" data-tab="shifts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3.5" y1="6" x2="3.51" y2="6"/><line x1="3.5" y1="12" x2="3.51" y2="12"/><line x1="3.5" y1="18" x2="3.51" y2="18"/></svg>
+      <span class="tab-label">Směny</span>
+    </button>
+    <button class="tab" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="tab-label">Nastavení</span>
+    </button>
+    <button class="tab add" data-tab="add">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span class="tab-label">Nová směna</span>
+    </button>
+  </nav>
+
+  <!-- ──────────────── OVERVIEW ──────────────── -->
+  <section class="section active" id="sec-overview">
+
+    <div class="hero">
+      <div class="hero-label" id="hero-period">Tento měsíc</div>
+      <div class="hero-value"><span id="hero-amount">0</span><span class="currency" id="hero-currency">Kč</span></div>
+      <div class="hero-meta">
+        <span><span class="pip"></span><strong id="hero-shifts">0</strong> směn</span>
+        <span><span class="pip amber"></span><strong id="hero-hours">0 h</strong></span>
+        <span><span class="pip clay"></span><strong id="hero-rate">0 Kč/h</strong> průměr</span>
+        <span id="hero-tips-wrap" style="display:none;"><span class="pip" style="background:var(--amber);"></span>z toho dýška <strong id="hero-tips">0 Kč</strong></span>
+      </div>
+    </div>
+
+    <div class="card" id="upcoming-card" style="display:none;">
+      <div class="card-head">
+        <div class="card-title">Nadcházející <em>směny</em></div>
+        <div class="card-sub" id="upcoming-meta">0 směn · 0 Kč</div>
+      </div>
+      <div class="up-list" id="upcoming-list"></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi accent">
+        <div class="kpi-label">Tento týden</div>
+        <div class="kpi-value" id="kpi-week">0</div>
+        <div class="kpi-sub" id="kpi-week-sub">0 h</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Celkem vyděláno</div>
+        <div class="kpi-value" id="kpi-total">0</div>
+        <div class="kpi-sub" id="kpi-total-sub">0 směn</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Odpracováno</div>
+        <div class="kpi-value" id="kpi-hours">0</div>
+        <div class="kpi-sub" id="kpi-hours-sub">0 směn</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Průměr / směna</div>
+        <div class="kpi-value" id="kpi-avg-shift">0</div>
+        <div class="kpi-sub" id="kpi-avg-shift-sub">0 h</div>
+      </div>
+    </div>
+
+    <div class="two-one">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Po <em>měsících</em></div>
+          <div class="card-sub">Posledních 12</div>
+        </div>
+        <div class="chart-wrap"><canvas id="monthChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Dny v <em>týdnu</em></div>
+        </div>
+        <div id="weekday-bd"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" id="cal-title">Kalendář</div>
+        <div class="cal-nav">
+          <button id="cal-prev" aria-label="Předchozí měsíc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div class="cal-label" id="cal-label">—</div>
+          <button id="cal-next" aria-label="Další měsíc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+      <div class="cal-wrap">
+        <div class="cal-head" id="cal-head"></div>
+        <div class="cal" id="cal"></div>
+      </div>
+      <div class="cal-legend">
+        <span class="lg"><span class="sw done"></span> Odpracováno</span>
+        <span class="lg"><span class="sw planned"></span> Plánováno</span>
+        <span class="lg"><span class="sw today"></span> Dnes</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Nedávné <em>směny</em></div>
+        <button class="act-btn" onclick="switchTab('shifts')">Zobrazit vše →</button>
+      </div>
+      <div class="table-wrap">
+        <table id="recent-table">
+          <thead>
+            <tr>
+              <th>Datum</th><th>Od</th><th>Do</th><th>Hodin</th><th>Výdělek</th><th>Poznámka</th>
+            </tr>
+          </thead>
+          <tbody id="recent-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────────── SHIFTS ──────────────── -->
+  <section class="section" id="sec-shifts">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Všechny <em>směny</em></div>
+        <div class="card-sub" id="shifts-count">0 směn</div>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" id="search" type="text" placeholder="Hledat v poznámkách...">
+        <div class="filter-chips" id="period-chips">
+          <button class="chip active" data-period="all">Vše</button>
+          <button class="chip" data-period="month">Měsíc</button>
+          <button class="chip" data-period="week">Týden</button>
+          <button class="chip" data-period="year">Rok</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="shifts-table">
+          <thead>
+            <tr>
+              <th data-sort="date">Datum</th>
+              <th data-sort="start">Od</th>
+              <th data-sort="end">Do</th>
+              <th>Pauza</th>
+              <th data-sort="hours">Hodin</th>
+              <th data-sort="rate">Sazba</th>
+              <th data-sort="tips">Dýško</th>
+              <th data-sort="earned">Celkem</th>
+              <th>Poznámka</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="shifts-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────────── ADD ──────────────── -->
+  <section class="section" id="sec-add">
+    <div class="card form-card">
+      <div class="form-title" id="form-title">Nová <em>směna</em></div>
+      <div class="form-sub" id="form-sub">Zaznamenej, kdy jsi pracoval a kolik za to dostaneš.</div>
+      <form id="shift-form" onsubmit="return false;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Datum</label>
+            <input class="form-input" type="date" id="f-date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Od</label>
+            <input class="form-input" type="time" id="f-start" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Do</label>
+            <input class="form-input" type="time" id="f-end" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pauza (min)</label>
+            <input class="form-input" type="number" id="f-break" min="0" step="5" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hodinová sazba</label>
+            <input class="form-input" type="number" id="f-rate" min="0" step="1" placeholder="výchozí">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dýška</label>
+            <input class="form-input" type="number" id="f-tips" min="0" step="1" placeholder="0">
+          </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label">Poznámka</label>
+            <input class="form-input" type="text" id="f-note" placeholder="místo, projekt...">
+          </div>
+        </div>
+
+        <div class="form-preview">
+          <div class="pv">
+            <div class="pv-label">Čistý čas</div>
+            <div class="pv-val amber" id="pv-hours">0 h 0 m</div>
+          </div>
+          <div class="pv">
+            <div class="pv-label">Mzda</div>
+            <div class="pv-val" id="pv-wage">0 Kč</div>
+          </div>
+          <div class="pv">
+            <div class="pv-label">Dýška</div>
+            <div class="pv-val" id="pv-tips-out">0 Kč</div>
+          </div>
+          <div class="pv">
+            <div class="pv-label">Celkem</div>
+            <div class="pv-val sage" id="pv-earned">0 Kč</div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="button" id="save-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Uložit směnu
+          </button>
+          <button class="btn btn-secondary" type="button" id="cancel-btn" style="display:none;">Zrušit úpravy</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ──────────────── SETTINGS ──────────────── -->
+  <section class="section" id="sec-settings">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Nastavení</div></div>
+      <div class="set-list">
+        <div class="set-row">
+          <div>
+            <div class="set-label">Výchozí hodinová sazba</div>
+            <div class="set-desc">Použije se, pokud u směny nezadáš jinou.</div>
+          </div>
+          <div class="set-control">
+            <input class="form-input" type="number" id="set-rate" min="0" step="1" style="width:140px;">
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-label">Měna</div>
+            <div class="set-desc">Zobrazení u všech částek.</div>
+          </div>
+          <div class="set-control">
+            <select class="form-select" id="set-currency">
+              <option value="Kč">Kč</option>
+              <option value="€">€</option>
+              <option value="$">$</option>
+              <option value="zł">zł</option>
+              <option value="£">£</option>
+            </select>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-label">Pozice měny</div>
+            <div class="set-desc">Vlevo nebo vpravo od částky.</div>
+          </div>
+          <div class="set-control">
+            <select class="form-select" id="set-curpos">
+              <option value="after">Vpravo (100 Kč)</option>
+              <option value="before">Vlevo (Kč 100)</option>
+            </select>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-label">První den v týdnu</div>
+            <div class="set-desc">Ovlivňuje „tento týden" a kalendář.</div>
+          </div>
+          <div class="set-control">
+            <select class="form-select" id="set-firstday">
+              <option value="1">Pondělí</option>
+              <option value="0">Neděle</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Data</div>
+        <div class="card-sub" id="data-info">0 záznamů</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="export-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportovat JSON
+        </button>
+        <button class="btn btn-secondary" id="import-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importovat JSON
+        </button>
+        <button class="btn btn-secondary" id="csv-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Export CSV
+        </button>
+        <button class="btn btn-danger" id="clear-btn">Smazat vše</button>
+        <input type="file" id="import-file" accept="application/json" style="display:none;">
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<button class="fab" id="fab" onclick="switchTab('add')" aria-label="Nová směna">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─── STATE ──────────────────────────────────── */
+const LS_DATA = 'shiftbook.shifts.v1';
+const LS_SET  = 'shiftbook.settings.v1';
+
+let shifts = [];
+let settings = {
+  defaultRate: 200,
+  currency: 'Kč',
+  currencyPos: 'after',
+  firstDay: 1,
+};
+let editingId = null;
+let filterPeriod = 'all';
+let searchQuery = '';
+let sortField = 'date';
+let sortDir = 'desc';
+let monthChart = null;
+let calMonth = new Date(); calMonth.setDate(1);
+
+/* ─── PERSISTENCE ────────────────────────────── */
+function load(){
+  // migrate older 'shiftstat.*' keys if present
+  try{
+    const oldS = localStorage.getItem('shiftstat.shifts.v1');
+    const oldT = localStorage.getItem('shiftstat.settings.v1');
+    if (oldS && !localStorage.getItem(LS_DATA)) localStorage.setItem(LS_DATA, oldS);
+    if (oldT && !localStorage.getItem(LS_SET))  localStorage.setItem(LS_SET, oldT);
+  }catch(e){}
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_DATA) || '[]');
+    if (Array.isArray(s)) shifts = s;
+  }catch(e){}
+  try{
+    const st = JSON.parse(localStorage.getItem(LS_SET) || '{}');
+    Object.assign(settings, st);
+  }catch(e){}
+}
+function save(){
+  localStorage.setItem(LS_DATA, JSON.stringify(shifts));
+  localStorage.setItem(LS_SET, JSON.stringify(settings));
+  if (window.__fbSave){
+    window.__fbSave('shifts', shifts);
+    window.__fbSave('shift_settings', settings);
+  }
+}
+
+/* ─── HELPERS ────────────────────────────────── */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function parseTime(t){
+  if(!t) return null;
+  const [h,m] = t.split(':').map(Number);
+  return h*60 + m;
+}
+function calcDuration(start, end){
+  let s = parseTime(start), e = parseTime(end);
+  if (s===null || e===null) return 0;
+  let diff = e - s;
+  if (diff < 0) diff += 24*60;
+  return diff;
+}
+function fmtDuration(min){
+  const h = Math.floor(min/60), m = min%60;
+  return `${h} h ${m.toString().padStart(2,'0')} m`;
+}
+function fmtHours(min){
+  return (min/60).toFixed(min%60===0?0:2).replace(/\.0+$/,'') + ' h';
+}
+function fmtMoney(v, opts={}){
+  v = Math.round(v);
+  const num = v.toLocaleString('cs-CZ');
+  if (opts.split) return {num, currency: settings.currency, pos: settings.currencyPos};
+  return settings.currencyPos === 'before' ? `${settings.currency} ${num}` : `${num} ${settings.currency}`;
+}
+function fmtMoneyShort(v){
+  v = Math.round(v);
+  if (Math.abs(v) >= 10000) return (v/1000).toFixed(v%1000===0?0:1).replace(/\.0$/,'') + 'k';
+  return v.toLocaleString('cs-CZ');
+}
+function fmtDate(iso){
+  const d = new Date(iso + 'T00:00');
+  return d.toLocaleDateString('cs-CZ', {day:'numeric', month:'numeric', year:'numeric'});
+}
+function fmtDateShort(iso){
+  const d = new Date(iso + 'T00:00');
+  return d.toLocaleDateString('cs-CZ', {day:'numeric', month:'numeric'});
+}
+function dayName(iso){
+  const d = new Date(iso + 'T00:00');
+  return ['Ne','Po','Út','St','Čt','Pá','So'][d.getDay()];
+}
+function dayNameLong(iso){
+  const d = new Date(iso + 'T00:00');
+  return ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'][d.getDay()];
+}
+function relativeDate(iso){
+  const t0 = new Date(todayISO() + 'T00:00');
+  const d  = new Date(iso + 'T00:00');
+  const diff = Math.round((d - t0) / 86400000);
+  if (diff === 0) return 'Dnes';
+  if (diff === 1) return 'Zítra';
+  if (diff === 2) return 'Pozítří';
+  if (diff > 0 && diff <= 14) return `za ${diff} ${pluralCS(diff,'den','dny','dní')}`;
+  return '';
+}
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function startOfWeek(d){
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = (day - settings.firstDay + 7) % 7;
+  dt.setDate(dt.getDate() - diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function shiftMinutes(s){
+  const dur = calcDuration(s.start, s.end);
+  const brk = Math.max(0, +s.break || 0);
+  return Math.max(0, dur - brk);
+}
+function shiftWage(s){
+  const rate = +s.rate || settings.defaultRate;
+  return (shiftMinutes(s) / 60) * rate;
+}
+function shiftTips(s){ return +s.tips || 0; }
+function shiftEarned(s){ return shiftWage(s) + shiftTips(s); }
+function effectiveRate(s){ return +s.rate || settings.defaultRate; }
+
+function pluralCS(n, one, few, many){
+  if (n === 1) return one;
+  if (n >= 2 && n <= 4) return few;
+  return many;
+}
+
+/* ─── TOAST ──────────────────────────────────── */
+let toastTimer;
+function toast(msg, kind='success'){
+  const t = document.getElementById('toast');
+  t.className = 'toast show ' + kind;
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ─── TABS ───────────────────────────────────── */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + name));
+  document.getElementById('fab').style.display = (name === 'add' || window.innerWidth > 640) ? (window.innerWidth > 640 ? 'none' : 'flex') : 'flex';
+  if (name === 'add'){
+    document.getElementById('fab').style.display = 'none';
+    if (!editingId) resetForm();
+  } else if (window.innerWidth <= 640){
+    document.getElementById('fab').style.display = 'flex';
+  } else {
+    document.getElementById('fab').style.display = 'none';
+  }
+  if (name === 'overview') setTimeout(() => { if (monthChart) monthChart.resize(); }, 50);
+  window.scrollTo({top:0, behavior:'smooth'});
+  sessionStorage.setItem('lastTab', name);
+}
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab');
+  if (b) switchTab(b.dataset.tab);
+});
+
+/* ─── FORM ───────────────────────────────────── */
+const f = {
+  date:  document.getElementById('f-date'),
+  start: document.getElementById('f-start'),
+  end:   document.getElementById('f-end'),
+  brk:   document.getElementById('f-break'),
+  rate:  document.getElementById('f-rate'),
+  tips:  document.getElementById('f-tips'),
+  note:  document.getElementById('f-note'),
+};
+const pvH = document.getElementById('pv-hours');
+const pvW = document.getElementById('pv-wage');
+const pvT = document.getElementById('pv-tips-out');
+const pvE = document.getElementById('pv-earned');
+
+function moneyHTML(v){
+  const m = fmtMoney(v, {split:true});
+  return m.pos === 'before'
+    ? `<span class="currency">${m.currency}</span> ${m.num}`
+    : `${m.num} <span class="currency">${m.currency}</span>`;
+}
+
+function updatePreview(){
+  const dur = calcDuration(f.start.value, f.end.value);
+  const brk = Math.max(0, +f.brk.value || 0);
+  const net = Math.max(0, dur - brk);
+  const rate = +f.rate.value || settings.defaultRate;
+  const tips = Math.max(0, +f.tips.value || 0);
+  const wage = (net/60)*rate;
+  pvH.textContent = fmtDuration(net);
+  pvW.innerHTML = moneyHTML(wage);
+  pvT.innerHTML = moneyHTML(tips);
+  pvE.innerHTML = moneyHTML(wage + tips);
+}
+[f.start, f.end, f.brk, f.rate, f.tips].forEach(el => el.addEventListener('input', updatePreview));
+
+function resetForm(){
+  editingId = null;
+  document.getElementById('form-title').innerHTML = 'Nová <em>směna</em>';
+  document.getElementById('form-sub').textContent = 'Zaznamenej, kdy jsi pracoval a kolik za to dostaneš.';
+  document.getElementById('cancel-btn').style.display = 'none';
+  document.getElementById('save-btn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Uložit směnu';
+  f.date.value = todayISO();
+  f.start.value = '';
+  f.end.value = '';
+  f.brk.value = '';
+  f.rate.value = '';
+  f.tips.value = '';
+  f.note.value = '';
+  f.rate.placeholder = `výchozí (${settings.defaultRate})`;
+  updatePreview();
+}
+
+function editShift(id){
+  const s = shifts.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  f.date.value = s.date;
+  f.start.value = s.start;
+  f.end.value = s.end;
+  f.brk.value = s.break || '';
+  f.rate.value = s.rate || '';
+  f.tips.value = s.tips || '';
+  f.note.value = s.note || '';
+  document.getElementById('form-title').innerHTML = 'Upravit <em>směnu</em>';
+  document.getElementById('form-sub').textContent = fmtDate(s.date) + ' · ' + s.start + '–' + s.end;
+  document.getElementById('cancel-btn').style.display = 'inline-flex';
+  document.getElementById('save-btn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Uložit změny';
+  switchTab('add');
+  updatePreview();
+}
+
+function deleteShift(id){
+  const s = shifts.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`Smazat směnu ${fmtDate(s.date)}?`)) return;
+  shifts = shifts.filter(x => x.id !== id);
+  save();
+  render();
+  toast('Směna smazána');
+}
+
+document.getElementById('save-btn').addEventListener('click', (e) => {
+  if (e){ e.preventDefault(); e.stopPropagation(); }
+  console.log('[shiftbook] save clicked');
+  try {
+    if (!f.date.value || !f.start.value || !f.end.value){
+      toast('Vyplň datum, začátek a konec', 'error');
+      return;
+    }
+    const data = {
+      date: f.date.value,
+      start: f.start.value,
+      end: f.end.value,
+      break: +f.brk.value || 0,
+      rate: +f.rate.value || 0,
+      tips: +f.tips.value || 0,
+      note: f.note.value.trim(),
+    };
+    const wasEditing = !!editingId;
+    if (editingId){
+      const idx = shifts.findIndex(x => x.id === editingId);
+      if (idx >= 0) shifts[idx] = {...shifts[idx], ...data};
+    } else {
+      shifts.push({id: uid(), ...data, createdAt: Date.now()});
+    }
+    console.log('[shiftbook] shifts count now', shifts.length);
+    toast(wasEditing ? 'Směna upravena' : 'Směna uložena');
+    try { save(); }                  catch(err){ console.error('[shiftbook] persist',  err); }
+    try { resetForm(); }             catch(err){ console.error('[shiftbook] resetForm',err); }
+    try { switchTab('overview'); }   catch(err){ console.error('[shiftbook] switchTab',err); }
+    try { render(); }                catch(err){ console.error('[shiftbook] render',   err); }
+  } catch (err){
+    console.error('[shiftbook] save handler crashed', err);
+    toast('Chyba: ' + (err.message || err), 'error');
+  }
+});
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  resetForm();
+  switchTab('shifts');
+});
+
+/* ─── SETTINGS ───────────────────────────────── */
+const setRate = document.getElementById('set-rate');
+const setCur  = document.getElementById('set-currency');
+const setPos  = document.getElementById('set-curpos');
+const setFD   = document.getElementById('set-firstday');
+
+function bindSettings(){
+  setRate.value = settings.defaultRate;
+  setCur.value  = settings.currency;
+  setPos.value  = settings.currencyPos;
+  setFD.value   = settings.firstDay;
+  setRate.addEventListener('input', () => { settings.defaultRate = +setRate.value || 0; save(); render(); resetForm(); });
+  setCur.addEventListener('change', () => { settings.currency = setCur.value; save(); render(); });
+  setPos.addEventListener('change', () => { settings.currencyPos = setPos.value; save(); render(); });
+  setFD.addEventListener('change',  () => { settings.firstDay = +setFD.value; save(); render(); });
+}
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({shifts, settings, exportedAt: new Date().toISOString()}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `shiftbook-${todayISO()}.json`;
+  a.click();
+  toast('Export hotov');
+});
+document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if (Array.isArray(data.shifts)){
+        if (confirm(`Importovat ${data.shifts.length} směn? Stávající data budou nahrazena.`)){
+          shifts = data.shifts;
+          if (data.settings) Object.assign(settings, data.settings);
+          save();
+          bindSettings();
+          render();
+          toast('Import hotov');
+        }
+      } else throw new Error('bad format');
+    }catch(err){ toast('Soubor není platný JSON export', 'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('csv-btn').addEventListener('click', () => {
+  const rows = [['Datum','Den','Od','Do','Pauza (min)','Hodin','Sazba','Mzda','Dýška','Celkem','Poznámka']];
+  [...shifts].sort((a,b) => a.date.localeCompare(b.date)).forEach(s => {
+    const min = shiftMinutes(s);
+    rows.push([
+      s.date, dayName(s.date), s.start, s.end,
+      s.break || 0,
+      (min/60).toFixed(2),
+      effectiveRate(s),
+      Math.round(shiftWage(s)),
+      Math.round(shiftTips(s)),
+      Math.round(shiftEarned(s)),
+      (s.note || '').replace(/[\n;]/g,' ')
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => /[",\n;]/.test(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(';')).join('\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `shiftbook-${todayISO()}.csv`;
+  a.click();
+  toast('CSV staženo');
+});
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (!confirm('Opravdu smazat všechna data? Tuto akci nelze vrátit.')) return;
+  if (!confirm('Vážně? Všechny směny budou pryč.')) return;
+  shifts = [];
+  save();
+  render();
+  toast('Vše smazáno');
+});
+
+/* ─── FILTERS / SHIFTS TABLE ─────────────────── */
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  renderShiftsTable();
+});
+document.getElementById('period-chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  filterPeriod = b.dataset.period;
+  document.querySelectorAll('#period-chips .chip').forEach(c => c.classList.toggle('active', c === b));
+  renderShiftsTable();
+});
+
+function applyFilters(list){
+  const now = new Date();
+  let from = null;
+  if (filterPeriod === 'week'){ from = startOfWeek(now); }
+  else if (filterPeriod === 'month'){ from = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if (filterPeriod === 'year'){ from = new Date(now.getFullYear(), 0, 1); }
+  return list.filter(s => {
+    if (from){
+      const d = new Date(s.date + 'T00:00');
+      if (d < from) return false;
+    }
+    if (searchQuery && !(s.note || '').toLowerCase().includes(searchQuery)) return false;
+    return true;
+  });
+}
+function sortShifts(list){
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...list].sort((a,b) => {
+    let A,B;
+    switch(sortField){
+      case 'date': A = a.date+a.start; B = b.date+b.start; break;
+      case 'start': A = a.start; B = b.start; break;
+      case 'end':   A = a.end; B = b.end; break;
+      case 'hours': A = shiftMinutes(a); B = shiftMinutes(b); break;
+      case 'rate':  A = effectiveRate(a); B = effectiveRate(b); break;
+      case 'tips':  A = shiftTips(a); B = shiftTips(b); break;
+      case 'earned':A = shiftEarned(a); B = shiftEarned(b); break;
+      default: A = a.date; B = b.date;
+    }
+    if (A < B) return -1*dir;
+    if (A > B) return 1*dir;
+    return 0;
+  });
+}
+
+document.querySelectorAll('#shifts-table th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const fld = th.dataset.sort;
+    if (sortField === fld) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    else { sortField = fld; sortDir = 'desc'; }
+    renderShiftsTable();
+  });
+});
+
+function escape(s){ return (s||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+function renderShiftsTable(){
+  const filtered = applyFilters(shifts);
+  const sorted = sortShifts(filtered);
+  const body = document.getElementById('shifts-body');
+  const n = filtered.length;
+  document.getElementById('shifts-count').textContent = `${n} ${pluralCS(n,'směna','směny','směn')}`;
+
+  document.querySelectorAll('#shifts-table th').forEach(th => {
+    th.classList.toggle('sort-active', th.dataset.sort === sortField);
+  });
+
+  if (sorted.length === 0){
+    body.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">⏱</div><h3>Žádné směny</h3><p>Přidej první přes <strong>+ Nová směna</strong>.</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = sorted.map(s => {
+    const min = shiftMinutes(s);
+    const tips = shiftTips(s);
+    return `<tr>
+      <td class="td-date"><strong>${fmtDate(s.date)}</strong><span class="dow">${dayName(s.date)}</span></td>
+      <td class="td-num">${s.start}</td>
+      <td class="td-num">${s.end}</td>
+      <td class="td-num">${s.break ? s.break + ' m' : '—'}</td>
+      <td class="td-num"><strong style="color:var(--ink);">${fmtDuration(min)}</strong></td>
+      <td class="td-num">${fmtMoney(effectiveRate(s))}</td>
+      <td class="td-num" style="color:${tips ? 'var(--amber)' : 'var(--ink-4)'};font-weight:${tips ? '600' : '500'};">${tips ? fmtMoney(tips) : '—'}</td>
+      <td class="td-money">${fmtMoney(shiftEarned(s))}</td>
+      <td class="td-note">${escape(s.note)}</td>
+      <td>
+        <button class="act-btn" onclick="editShift('${s.id}')">Upravit</button>
+        <button class="act-btn del" onclick="deleteShift('${s.id}')">×</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── OVERVIEW ───────────────────────────────── */
+function totals(list){
+  let min = 0, earned = 0;
+  list.forEach(s => { min += shiftMinutes(s); earned += shiftEarned(s); });
+  return {min, earned};
+}
+
+function renderHero(){
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  const monthShifts = shifts.filter(s => {
+    const d = new Date(s.date + 'T00:00');
+    return d >= monthStart && d < monthEnd;
+  });
+  const t = totals(monthShifts);
+  const monthTips = monthShifts.reduce((a,s) => a + shiftTips(s), 0);
+  document.getElementById('hero-period').textContent = now.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'}).toUpperCase();
+  document.getElementById('hero-amount').textContent = Math.round(t.earned).toLocaleString('cs-CZ');
+  document.getElementById('hero-currency').textContent = settings.currency;
+  document.getElementById('hero-shifts').textContent = monthShifts.length;
+  document.getElementById('hero-hours').textContent = fmtHours(t.min);
+  const avgRate = t.min > 0 ? Math.round(t.earned / (t.min/60)) : 0;
+  document.getElementById('hero-rate').textContent = fmtMoney(avgRate) + '/h';
+  document.getElementById('hero-tips-wrap').style.display = monthTips > 0 ? 'inline' : 'none';
+  document.getElementById('hero-tips').textContent = fmtMoney(monthTips);
+}
+
+function renderKPIs(){
+  const now = new Date();
+  const weekStart = startOfWeek(now);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 7);
+  const all = totals(shifts);
+  const week = totals(shifts.filter(s => {
+    const d = new Date(s.date + 'T00:00');
+    return d >= weekStart && d < weekEnd;
+  }));
+
+  // header
+  document.getElementById('hs-total').textContent = fmtMoney(all.earned);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  const monthEarned = shifts.filter(s => {
+    const d = new Date(s.date + 'T00:00');
+    return d >= monthStart && d < monthEnd;
+  }).reduce((a,s) => a + shiftEarned(s), 0);
+  document.getElementById('hs-month').textContent = fmtMoney(monthEarned);
+  document.getElementById('hs-hours').textContent = fmtHours(all.min);
+
+  // kpis
+  document.getElementById('kpi-week').textContent = fmtMoney(week.earned);
+  document.getElementById('kpi-week-sub').textContent = fmtHours(week.min);
+  document.getElementById('kpi-total').textContent = fmtMoney(all.earned);
+  document.getElementById('kpi-total-sub').textContent = `${shifts.length} ${pluralCS(shifts.length,'směna','směny','směn')}`;
+  document.getElementById('kpi-hours').textContent = fmtHours(all.min);
+  document.getElementById('kpi-hours-sub').textContent = `${shifts.length} ${pluralCS(shifts.length,'směna','směny','směn')}`;
+
+  const avgEarned = shifts.length ? all.earned / shifts.length : 0;
+  const avgMin = shifts.length ? all.min / shifts.length : 0;
+  document.getElementById('kpi-avg-shift').textContent = fmtMoney(avgEarned);
+  document.getElementById('kpi-avg-shift-sub').textContent = fmtDuration(Math.round(avgMin));
+}
+
+function renderMonthChart(){
+  const canvas = document.getElementById('monthChart');
+  if (!canvas) return;
+  if (typeof Chart === 'undefined'){
+    // graceful fallback — Chart.js se nenačetl (offline / blokovaný CDN)
+    const wrap = canvas.parentElement;
+    if (wrap && !wrap.dataset.fallback){
+      wrap.dataset.fallback = '1';
+      wrap.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--ink-3);font-size:13px;">Graf je nedostupný (Chart.js se nepodařilo načíst).</div>';
+    }
+    return;
+  }
+  const months = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+      label: d.toLocaleDateString('cs-CZ', {month:'short'}).replace('.',''),
+      earned: 0, hours: 0
+    });
+  }
+  shifts.forEach(s => {
+    const k = s.date.slice(0,7);
+    const m = months.find(x => x.key === k);
+    if (m){ m.earned += shiftEarned(s); m.hours += shiftMinutes(s)/60; }
+  });
+  const ctx = canvas.getContext('2d');
+  if (monthChart){ try{ monthChart.destroy(); }catch(e){} }
+  monthChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: months.map(m => m.label),
+      datasets:[{
+        label:'Výdělek',
+        data: months.map(m => Math.round(m.earned)),
+        backgroundColor: '#3f7a5a',
+        hoverBackgroundColor:'#2f5d44',
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#1a1a1a',
+          padding:10,
+          titleFont:{family:'Inter',weight:'600',size:12},
+          bodyFont:{family:'JetBrains Mono',size:12},
+          callbacks:{
+            label: ctx => `${fmtMoney(ctx.parsed.y)} · ${months[ctx.dataIndex].hours.toFixed(1)} h`
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:'#6b6962',font:{family:'Inter',size:11,weight:'500'}},
+          grid:{display:false},
+          border:{color:'#e7e2d4'}
+        },
+        y:{
+          ticks:{
+            color:'#9c9a90',font:{family:'JetBrains Mono',size:10},
+            callback: v => fmtMoneyShort(v)
+          },
+          grid:{color:'#efeadd'},
+          border:{display:false}
+        }
+      }
+    }
+  });
+}
+
+function renderWeekdayBreakdown(){
+  const days = ['Neděle','Pondělí','Úterý','Středa','Čtvrtek','Pátek','Sobota'];
+  const short = ['Ne','Po','Út','St','Čt','Pá','So'];
+  const order = settings.firstDay === 1 ? [1,2,3,4,5,6,0] : [0,1,2,3,4,5,6];
+  const totals = order.map(i => ({i, name: window.innerWidth < 640 ? short[i] : days[i], earned:0, count:0}));
+  shifts.forEach(s => {
+    const d = new Date(s.date + 'T00:00').getDay();
+    const t = totals.find(x => x.i === d);
+    if (t){ t.earned += shiftEarned(s); t.count++; }
+  });
+  const max = Math.max(...totals.map(t => t.earned), 1);
+  const wrap = document.getElementById('weekday-bd');
+  wrap.innerHTML = totals.map(t => `
+    <div class="bd-row">
+      <div class="bd-name">${t.name}</div>
+      <div class="bd-bar-wrap"><div class="bd-bar" style="width:${(t.earned/max)*100}%;"></div></div>
+      <div class="bd-val">${fmtMoneyShort(t.earned)}</div>
+      <div class="bd-sub">${t.count}×</div>
+    </div>
+  `).join('');
+}
+
+/* ─── CALENDAR ──────────────────────────────── */
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1);
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1);
+  renderCalendar();
+});
+
+function renderCalendar(){
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  const todayIso = todayISO();
+
+  document.getElementById('cal-label').textContent = calMonth.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'});
+
+  const daysShort = ['Ne','Po','Út','St','Čt','Pá','So'];
+  const order = settings.firstDay === 1 ? [1,2,3,4,5,6,0] : [0,1,2,3,4,5,6];
+  document.getElementById('cal-head').innerHTML = order.map(i => `<div class="cal-head-cell">${daysShort[i]}</div>`).join('');
+
+  const firstDay = new Date(year, month, 1);
+  const startDow = firstDay.getDay();
+  const offset = (startDow - settings.firstDay + 7) % 7;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const cells = [];
+
+  // leading empty
+  for (let i = 0; i < offset; i++) cells.push({empty:true});
+
+  const byDay = {};
+  shifts.forEach(s => {
+    if (!byDay[s.date]) byDay[s.date] = {min:0, earned:0, count:0};
+    byDay[s.date].min += shiftMinutes(s);
+    byDay[s.date].earned += shiftEarned(s);
+    byDay[s.date].count++;
+  });
+
+  for (let d = 1; d <= daysInMonth; d++){
+    const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entry = byDay[iso];
+    const isToday = iso === todayIso;
+    const isFuture = new Date(iso + 'T00:00') > new Date(todayIso + 'T23:59');
+    cells.push({d, iso, entry, isToday, isFuture});
+  }
+
+  // pad to multiples of 7
+  while (cells.length % 7 !== 0) cells.push({empty:true});
+
+  document.getElementById('cal').innerHTML = cells.map(c => {
+    if (c.empty) return `<div class="cal-day empty"></div>`;
+    const cls = ['cal-day'];
+    if (c.entry) cls.push('has');
+    if (c.isToday) cls.push('today');
+    if (c.isFuture) cls.push('future');
+    if (c.isFuture && !c.entry) cls.push('empty-future');
+    const hLabel = c.entry ? `${(c.entry.min/60).toFixed(c.entry.min%60===0?0:1).replace(/\.0$/,'')} h` : '';
+    const money = c.entry ? fmtMoneyShort(c.entry.earned) + ' ' + settings.currency : '';
+    const planned = c.isFuture && c.entry ? ' · plánováno' : '';
+    return `<div class="${cls.join(' ')}" title="${c.iso}${c.entry ? ' · ' + fmtDuration(c.entry.min) + ' · ' + fmtMoney(c.entry.earned) + planned : ''}">
+      <div class="cal-num">${c.d}</div>
+      ${c.entry ? `<div><div class="cal-h">${hLabel}</div><div class="cal-money">${money}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ─── UPCOMING ──────────────────────────────── */
+function renderUpcoming(){
+  const today = todayISO();
+  const upcoming = shifts
+    .filter(s => s.date >= today)
+    .sort((a,b) => (a.date + a.start).localeCompare(b.date + b.start));
+
+  const card = document.getElementById('upcoming-card');
+  const list = document.getElementById('upcoming-list');
+  const meta = document.getElementById('upcoming-meta');
+
+  if (upcoming.length === 0){
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  const sum = upcoming.reduce((a,s) => a + shiftEarned(s), 0);
+  const totalMin = upcoming.reduce((a,s) => a + shiftMinutes(s), 0);
+  meta.textContent = `${upcoming.length} ${pluralCS(upcoming.length,'směna','směny','směn')} · ${fmtHours(totalMin)} · ${fmtMoney(sum)}`;
+
+  list.innerHTML = upcoming.slice(0, 8).map(s => {
+    const min = shiftMinutes(s);
+    const rel = relativeDate(s.date);
+    const isToday = s.date === today;
+    const isMobile = window.innerWidth < 640;
+    const dateLabel = isMobile
+      ? `${dayName(s.date)} ${fmtDateShort(s.date)}`
+      : `${dayNameLong(s.date)} ${fmtDateShort(s.date)}`;
+    return `
+      <div class="up-row ${isToday ? 'is-today':''}" onclick="editShift('${s.id}')">
+        <div class="up-date">
+          <strong>${dateLabel}</strong>
+          ${rel ? `<span class="up-rel">${rel}</span>` : ''}
+        </div>
+        <div class="up-time">
+          ${s.start} → ${s.end}<span class="dur">${fmtDuration(min)}</span>${s.note ? `<span class="note">${escape(s.note)}</span>` : ''}
+        </div>
+        <div class="up-earned">${fmtMoney(shiftEarned(s))}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRecent(){
+  const last = [...shifts].sort((a,b) => (b.date+b.start).localeCompare(a.date+a.start)).slice(0,5);
+  const body = document.getElementById('recent-body');
+  if (last.length === 0){
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">⏱</div><h3>Zatím žádné směny</h3><p>Klikni na <strong>+ Nová směna</strong> a začni evidovat.</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = last.map(s => `<tr>
+    <td class="td-date"><strong>${fmtDateShort(s.date)}</strong><span class="dow">${dayName(s.date)}</span></td>
+    <td class="td-num">${s.start}</td>
+    <td class="td-num">${s.end}</td>
+    <td class="td-num"><strong style="color:var(--ink);">${fmtDuration(shiftMinutes(s))}</strong></td>
+    <td class="td-money">${fmtMoney(shiftEarned(s))}</td>
+    <td class="td-note">${escape(s.note)}</td>
+  </tr>`).join('');
+}
+
+/* ─── RENDER ─────────────────────────────────── */
+function safeCall(fn){
+  try { fn(); } catch(e){ console.error('[render]', fn.name, e); }
+}
+function render(){
+  [renderHero, renderUpcoming, renderKPIs, renderMonthChart, renderWeekdayBreakdown, renderCalendar, renderRecent, renderShiftsTable].forEach(safeCall);
+  try{
+    document.getElementById('data-info').textContent = `${shifts.length} ${pluralCS(shifts.length,'záznam','záznamy','záznamů')}`;
+  }catch(e){}
+}
+
+/* ─── INIT ───────────────────────────────────── */
+load();
+bindSettings();
+resetForm();
+render();
+
+const lastTab = sessionStorage.getItem('lastTab') || 'overview';
+switchTab(lastTab);
+
+window.addEventListener('resize', () => {
+  if (monthChart) monthChart.resize();
+});
+
+// expose
+window.editShift = editShift;
+window.deleteShift = deleteShift;
+window.switchTab = switchTab;
+window.load = load;
+window.render = render;
+window.bindSettings = bindSettings;
+window.resetForm = resetForm;
+
+// logout button
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+  if (window.__signOut) window.__signOut();
+});
+</script>
+</body>
+</html>
