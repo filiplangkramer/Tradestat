@@ -78,6 +78,10 @@ body{
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
   letter-spacing:-0.005em;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
 }
 
 /* ─── AURORA BACKGROUND ─────────────────────── */
@@ -205,7 +209,7 @@ header.topbar{
   display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap;
   background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border:1px solid var(--border);border-radius:var(--radius);padding:6px;
-  position:sticky;top:12px;z-index:50;
+  position:sticky;top:calc(12px + env(safe-area-inset-top));z-index:50;
   box-shadow:var(--shadow-1);
 }
 .tab{
@@ -1209,7 +1213,7 @@ onAuthStateChanged(auth, async (user) => {
     if (!existing) {
       const bar = document.createElement('div');
       bar.id = 'auth-user-bar';
-      bar.style.cssText = 'position:fixed;top:14px;right:18px;z-index:1000;display:flex;align-items:center;gap:8px;background:rgba(20,25,45,0.7);backdrop-filter:blur(10px);border:1px solid rgba(94,234,212,0.2);border-radius:10px;padding:5px 10px 5px 6px;font-size:0.78rem;color:#9aa4c2;cursor:pointer;font-family:"Space Grotesk",system-ui,sans-serif;font-weight:500;transition:border-color .2s;';
+      bar.style.cssText = 'position:fixed;top:calc(14px + env(safe-area-inset-top));right:calc(18px + env(safe-area-inset-right));z-index:1000;display:flex;align-items:center;gap:8px;background:rgba(20,25,45,0.7);backdrop-filter:blur(10px);border:1px solid rgba(94,234,212,0.2);border-radius:10px;padding:5px 10px 5px 6px;font-size:0.78rem;color:#9aa4c2;cursor:pointer;font-family:"Space Grotesk",system-ui,sans-serif;font-weight:500;transition:border-color .2s;';
       bar.innerHTML = `<a href="../" title="Zpět na výběr aplikací" style="color:#5eead4;text-decoration:none;padding:0 6px 0 2px;font-size:14px;line-height:1;" onclick="event.stopPropagation()">←</a><img src="${user.photoURL || ''}" width="22" height="22" style="border-radius:50%;display:${user.photoURL ? 'block' : 'none'}" /><span>${user.displayName || user.email}</span><span style="color:#5b6584;margin-left:4px;font-size:0.85rem" title="Odhlásit se">✕</span>`;
       bar.addEventListener('click', (e) => { if (e.target.tagName === 'A') return; if(confirm('Odhlásit se?')) signOut(auth); });
       document.body.appendChild(bar);
