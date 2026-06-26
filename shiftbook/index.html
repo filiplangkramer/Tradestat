@@ -1012,12 +1012,12 @@ window.__signOut = () => {
             <input class="form-input" type="date" id="f-date" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Od</label>
-            <input class="form-input" type="time" id="f-start" required>
+            <label class="form-label">Od <span style="color:var(--ink-4);font-weight:400;text-transform:none;letter-spacing:0;">(volitelné)</span></label>
+            <input class="form-input" type="time" id="f-start">
           </div>
           <div class="form-group">
-            <label class="form-label">Do</label>
-            <input class="form-input" type="time" id="f-end" required>
+            <label class="form-label">Do <span style="color:var(--ink-4);font-weight:400;text-transform:none;letter-spacing:0;">(volitelné)</span></label>
+            <input class="form-input" type="time" id="f-end">
           </div>
           <div class="form-group">
             <label class="form-label">Pauza (min)</label>
@@ -1348,16 +1348,18 @@ function moneyHTML(v){
 }
 
 function updatePreview(){
+  const noTimes = !f.start.value || !f.end.value;
   const dur = calcDuration(f.start.value, f.end.value);
   const brk = Math.max(0, +f.brk.value || 0);
   const net = Math.max(0, dur - brk);
   const rate = +f.rate.value || settings.defaultRate;
   const tips = Math.max(0, +f.tips.value || 0);
   const wage = (net/60)*rate;
-  pvH.textContent = fmtDuration(net);
-  pvW.innerHTML = moneyHTML(wage);
-  pvT.innerHTML = moneyHTML(tips);
-  pvE.innerHTML = moneyHTML(wage + tips);
+  const dash = '<span style="color:var(--ink-4);">—</span>';
+  pvH.textContent = noTimes ? '—' : fmtDuration(net);
+  pvW.innerHTML = noTimes ? dash : moneyHTML(wage);
+  pvT.innerHTML = tips > 0 ? moneyHTML(tips) : dash;
+  pvE.innerHTML = (noTimes && !tips) ? dash : moneyHTML(wage + tips);
 }
 [f.start, f.end, f.brk, f.rate, f.tips].forEach(el => el.addEventListener('input', updatePreview));
 
@@ -1411,8 +1413,12 @@ document.getElementById('save-btn').addEventListener('click', (e) => {
   if (e){ e.preventDefault(); e.stopPropagation(); }
   console.log('[shiftbook] save clicked');
   try {
-    if (!f.date.value || !f.start.value || !f.end.value){
-      toast('Vyplň datum, začátek a konec', 'error');
+    if (!f.date.value){
+      toast('Vyplň datum', 'error');
+      return;
+    }
+    if ((f.start.value && !f.end.value) || (!f.start.value && f.end.value)){
+      toast('Vyplň oba časy nebo žádný', 'error');
       return;
     }
     const data = {
@@ -1604,15 +1610,16 @@ function renderShiftsTable(){
   body.innerHTML = sorted.map(s => {
     const min = shiftMinutes(s);
     const tips = shiftTips(s);
+    const tbd = !s.start || !s.end;
     return `<tr>
       <td class="td-date"><strong>${fmtDate(s.date)}</strong><span class="dow">${dayName(s.date)}</span></td>
-      <td class="td-num">${s.start}</td>
-      <td class="td-num">${s.end}</td>
+      <td class="td-num" style="${tbd ? 'color:var(--ink-4);' : ''}">${s.start || '—'}</td>
+      <td class="td-num" style="${tbd ? 'color:var(--ink-4);' : ''}">${s.end || '—'}</td>
       <td class="td-num">${s.break ? s.break + ' m' : '—'}</td>
-      <td class="td-num"><strong style="color:var(--ink);">${fmtDuration(min)}</strong></td>
+      <td class="td-num">${tbd ? '<span style="color:var(--ink-4);">—</span>' : `<strong style="color:var(--ink);">${fmtDuration(min)}</strong>`}</td>
       <td class="td-num">${fmtMoney(effectiveRate(s))}</td>
       <td class="td-num" style="color:${tips ? 'var(--amber)' : 'var(--ink-4)'};font-weight:${tips ? '600' : '500'};">${tips ? fmtMoney(tips) : '—'}</td>
-      <td class="td-money">${fmtMoney(shiftEarned(s))}</td>
+      <td class="td-money">${(tbd && !tips) ? '<span style="color:var(--ink-4);font-weight:500;">—</span>' : fmtMoney(shiftEarned(s))}</td>
       <td class="td-note">${escape(s.note)}</td>
       <td>
         <button class="act-btn" onclick="editShift('${s.id}')">Upravit</button>
@@ -1838,10 +1845,11 @@ function renderCalendar(){
     if (c.isToday) cls.push('today');
     if (c.isFuture) cls.push('future');
     if (c.isFuture && !c.entry) cls.push('empty-future');
-    const hLabel = c.entry ? `${(c.entry.min/60).toFixed(c.entry.min%60===0?0:1).replace(/\.0$/,'')} h` : '';
-    const money = c.entry ? fmtMoneyShort(c.entry.earned) + ' ' + settings.currency : '';
+    const hLabel = c.entry ? (c.entry.min > 0 ? `${(c.entry.min/60).toFixed(c.entry.min%60===0?0:1).replace(/\.0$/,'')} h` : '—') : '';
+    const money = c.entry ? (c.entry.earned > 0 ? fmtMoneyShort(c.entry.earned) + ' ' + settings.currency : '') : '';
     const planned = c.isFuture && c.entry ? ' · plánováno' : '';
-    return `<div class="${cls.join(' ')}" title="${c.iso}${c.entry ? ' · ' + fmtDuration(c.entry.min) + ' · ' + fmtMoney(c.entry.earned) + planned : ''}">
+    const tip = c.entry ? (c.entry.min > 0 ? fmtDuration(c.entry.min) : 'čas neurčen') + (c.entry.earned > 0 ? ' · ' + fmtMoney(c.entry.earned) : '') + planned : '';
+    return `<div class="${cls.join(' ')}" title="${c.iso}${tip ? ' · ' + tip : ''}">
       <div class="cal-num">${c.d}</div>
       ${c.entry ? `<div><div class="cal-h">${hLabel}</div><div class="cal-money">${money}</div></div>` : ''}
     </div>`;
@@ -1874,19 +1882,24 @@ function renderUpcoming(){
     const rel = relativeDate(s.date);
     const isToday = s.date === today;
     const isMobile = window.innerWidth < 640;
+    const tbd = !s.start || !s.end;
     const dateLabel = isMobile
       ? `${dayName(s.date)} ${fmtDateShort(s.date)}`
       : `${dayNameLong(s.date)} ${fmtDateShort(s.date)}`;
+    const timeBlock = tbd
+      ? `<span style="color:var(--ink-4);font-style:italic;">Čas neurčen — kliknutím doplň</span>${s.note ? `<span class="note">${escape(s.note)}</span>` : ''}`
+      : `${s.start} → ${s.end}<span class="dur">${fmtDuration(min)}</span>${s.note ? `<span class="note">${escape(s.note)}</span>` : ''}`;
+    const earnedBlock = (tbd && !shiftTips(s))
+      ? `<span style="color:var(--ink-4);font-weight:500;">—</span>`
+      : fmtMoney(shiftEarned(s));
     return `
       <div class="up-row ${isToday ? 'is-today':''}" onclick="editShift('${s.id}')">
         <div class="up-date">
           <strong>${dateLabel}</strong>
           ${rel ? `<span class="up-rel">${rel}</span>` : ''}
         </div>
-        <div class="up-time">
-          ${s.start} → ${s.end}<span class="dur">${fmtDuration(min)}</span>${s.note ? `<span class="note">${escape(s.note)}</span>` : ''}
-        </div>
-        <div class="up-earned">${fmtMoney(shiftEarned(s))}</div>
+        <div class="up-time">${timeBlock}</div>
+        <div class="up-earned">${earnedBlock}</div>
       </div>
     `;
   }).join('');
@@ -1899,14 +1912,17 @@ function renderRecent(){
     body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">⏱</div><h3>Zatím žádné směny</h3><p>Klikni na <strong>+ Nová směna</strong> a začni evidovat.</p></div></td></tr>`;
     return;
   }
-  body.innerHTML = last.map(s => `<tr>
+  body.innerHTML = last.map(s => {
+    const tbd = !s.start || !s.end;
+    return `<tr>
     <td class="td-date"><strong>${fmtDateShort(s.date)}</strong><span class="dow">${dayName(s.date)}</span></td>
-    <td class="td-num">${s.start}</td>
-    <td class="td-num">${s.end}</td>
-    <td class="td-num"><strong style="color:var(--ink);">${fmtDuration(shiftMinutes(s))}</strong></td>
-    <td class="td-money">${fmtMoney(shiftEarned(s))}</td>
+    <td class="td-num" style="${tbd ? 'color:var(--ink-4);' : ''}">${s.start || '—'}</td>
+    <td class="td-num" style="${tbd ? 'color:var(--ink-4);' : ''}">${s.end || '—'}</td>
+    <td class="td-num">${tbd ? '<span style="color:var(--ink-4);">—</span>' : `<strong style="color:var(--ink);">${fmtDuration(shiftMinutes(s))}</strong>`}</td>
+    <td class="td-money">${(tbd && !shiftTips(s)) ? '<span style="color:var(--ink-4);font-weight:500;">—</span>' : fmtMoney(shiftEarned(s))}</td>
     <td class="td-note">${escape(s.note)}</td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 }
 
 /* ─── RENDER ─────────────────────────────────── */
