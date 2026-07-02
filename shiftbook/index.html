@@ -628,6 +628,85 @@ input[type="date"],input[type="time"],input[type="number"]{color-scheme:light;}
   .hero-value{font-size:38px;}
 }
 
+/* ─── HERO MONTH NAV (redesign) ─────────────── */
+.hero-nav{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+}
+.hero-nav .hero-label{margin-bottom:0;min-width:130px;text-align:center;}
+.hero-nav-btn{
+  width:26px;height:26px;border-radius:7px;
+  border:1px solid var(--line);background:var(--surface);
+  color:var(--ink-3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;padding:0;
+}
+.hero-nav-btn:hover{border-color:var(--sage);color:var(--sage);}
+.hero-nav-btn:active{transform:scale(0.92);}
+.hero-nav-btn svg{width:14px;height:14px;}
+.hero-today-btn{
+  margin-left:4px;padding:4px 12px;border-radius:7px;
+  border:1px solid rgba(176,112,32,0.35);background:var(--amber-soft);
+  color:var(--amber-2);font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--sans);transition:all .15s;
+}
+.hero-today-btn:hover{border-color:var(--amber);}
+
+#hero-compare{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;
+}
+#hero-compare.up{background:var(--sage-soft);color:var(--sage-2);}
+#hero-compare.down{background:var(--rose-soft);color:var(--rose);}
+#hero-compare.flat{background:var(--clay-soft);color:var(--clay);}
+
+/* ─── GOAL BAR ──────────────────────────────── */
+.goal-wrap{margin-top:18px;position:relative;z-index:1;max-width:440px;}
+.goal-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.goal-label{
+  font-size:10px;color:var(--ink-4);text-transform:uppercase;
+  letter-spacing:0.2em;font-weight:700;
+}
+.goal-pct{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--sage);}
+.goal-bar{
+  height:10px;background:var(--paper-2);border-radius:6px;overflow:hidden;
+  border:1px solid var(--line);
+}
+.goal-fill{
+  height:100%;border-radius:6px;width:0;
+  background:linear-gradient(90deg,var(--sage),#5a9b78);
+  transition:width .9s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
+}
+.goal-fill::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+  animation:shine 2.4s infinite;
+}
+.goal-fill.done{background:linear-gradient(90deg,#b07020,#d99c4d);}
+.goal-sub{font-size:11px;color:var(--ink-3);margin-top:5px;font-family:var(--mono);}
+
+/* ─── MICROINTERACTIONS (redesign) ──────────── */
+.tab:active{transform:scale(0.95);}
+.kpi .kpi-value{transition:transform .25s cubic-bezier(.4,0,.2,1);display:inline-block;}
+.kpi:hover .kpi-value{transform:scale(1.04);}
+.section.active .kpi{animation:fadeUp .45s cubic-bezier(.4,0,.2,1) both;}
+.section.active .kpi:nth-child(1){animation-delay:.02s;}
+.section.active .kpi:nth-child(2){animation-delay:.06s;}
+.section.active .kpi:nth-child(3){animation-delay:.10s;}
+.section.active .kpi:nth-child(4){animation-delay:.14s;}
+.section.active .kpi:nth-child(5){animation-delay:.18s;}
+.section.active .kpi:nth-child(6){animation-delay:.22s;}
+
+/* akcentní proužky KPI */
+.kpi.acc-sage{border-left:3px solid rgba(63,122,90,0.5);}
+.kpi.acc-amber{border-left:3px solid rgba(176,112,32,0.45);}
+.kpi.acc-clay{border-left:3px solid rgba(122,106,82,0.4);}
+
+@media (max-width:640px){
+  .hero-nav .hero-label{min-width:0;flex:1;}
+  .goal-wrap{max-width:none;}
+}
+
 /* ─── AUTH OVERLAY ──────────────────────────── */
 #auth-overlay{
   position:fixed;inset:0;background:var(--paper);
@@ -884,13 +963,27 @@ window.__signOut = () => {
   <section class="section active" id="sec-overview">
 
     <div class="hero">
-      <div class="hero-label" id="hero-period">Tento měsíc</div>
+      <div class="hero-nav">
+        <button class="hero-nav-btn" id="hero-prev" aria-label="Předchozí měsíc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <div class="hero-label" id="hero-period">Tento měsíc</div>
+        <button class="hero-nav-btn" id="hero-next" aria-label="Další měsíc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="hero-today-btn" id="hero-today" style="display:none;">Dnes</button>
+      </div>
       <div class="hero-value"><span id="hero-amount">0</span><span class="currency" id="hero-currency">Kč</span></div>
       <div class="hero-meta">
         <span><span class="pip"></span><strong id="hero-shifts">0</strong> směn</span>
         <span><span class="pip amber"></span><strong id="hero-hours">0 h</strong></span>
         <span><span class="pip clay"></span><strong id="hero-rate">0 Kč/h</strong> průměr</span>
         <span id="hero-tips-wrap" style="display:none;"><span class="pip" style="background:var(--amber);"></span>z toho dýška <strong id="hero-tips">0 Kč</strong></span>
+        <span id="hero-compare" style="display:none;"></span>
+      </div>
+      <div class="goal-wrap" id="goal-wrap" style="display:none;">
+        <div class="goal-head">
+          <span class="goal-label">Měsíční cíl</span>
+          <span class="goal-pct" id="goal-pct">0 %</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill" id="goal-fill"></div></div>
+        <div class="goal-sub" id="goal-sub">—</div>
       </div>
     </div>
 
@@ -903,25 +996,35 @@ window.__signOut = () => {
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi accent">
+      <div class="kpi accent acc-sage">
         <div class="kpi-label">Tento týden</div>
         <div class="kpi-value" id="kpi-week">0</div>
         <div class="kpi-sub" id="kpi-week-sub">0 h</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">Celkem vyděláno</div>
-        <div class="kpi-value" id="kpi-total">0</div>
-        <div class="kpi-sub" id="kpi-total-sub">0 směn</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Odpracováno</div>
+      <div class="kpi acc-amber">
+        <div class="kpi-label" id="kpi-hours-label">Odpracováno</div>
         <div class="kpi-value" id="kpi-hours">0</div>
         <div class="kpi-sub" id="kpi-hours-sub">0 směn</div>
       </div>
-      <div class="kpi">
+      <div class="kpi acc-sage">
         <div class="kpi-label">Průměr / směna</div>
         <div class="kpi-value" id="kpi-avg-shift">0</div>
         <div class="kpi-sub" id="kpi-avg-shift-sub">0 h</div>
+      </div>
+      <div class="kpi acc-clay">
+        <div class="kpi-label">Hodinovka</div>
+        <div class="kpi-value" id="kpi-hourly">0</div>
+        <div class="kpi-sub" id="kpi-hourly-sub">mzda + dýška / hodina</div>
+      </div>
+      <div class="kpi acc-amber">
+        <div class="kpi-label">Dýška</div>
+        <div class="kpi-value" id="kpi-tips">0</div>
+        <div class="kpi-sub" id="kpi-tips-sub">—</div>
+      </div>
+      <div class="kpi acc-clay">
+        <div class="kpi-label">Celkem vyděláno</div>
+        <div class="kpi-value" id="kpi-total">0</div>
+        <div class="kpi-sub" id="kpi-total-sub">0 směn</div>
       </div>
     </div>
 
@@ -936,6 +1039,7 @@ window.__signOut = () => {
       <div class="card">
         <div class="card-head">
           <div class="card-title">Dny v <em>týdnu</em></div>
+          <div class="card-sub" id="weekday-sub">—</div>
         </div>
         <div id="weekday-bd"></div>
       </div>
@@ -963,8 +1067,11 @@ window.__signOut = () => {
 
     <div class="card">
       <div class="card-head">
-        <div class="card-title">Nedávné <em>směny</em></div>
-        <button class="act-btn" onclick="switchTab('shifts')">Zobrazit vše →</button>
+        <div class="card-title">Směny v <em>měsíci</em></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="card-sub" id="recent-sub">—</div>
+          <button class="act-btn" onclick="switchTab('shifts')">Vše →</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table id="recent-table">
@@ -1137,6 +1244,15 @@ window.__signOut = () => {
             </select>
           </div>
         </div>
+        <div class="set-row">
+          <div>
+            <div class="set-label">Měsíční cíl výdělku</div>
+            <div class="set-desc">Ukáže progress bar na přehledu. 0 = vypnuto.</div>
+          </div>
+          <div class="set-control">
+            <input class="form-input" type="number" id="set-goal" min="0" step="500" style="width:140px;" placeholder="0">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1183,6 +1299,7 @@ let settings = {
   currency: 'Kč',
   currencyPos: 'after',
   firstDay: 1,
+  monthlyGoal: 0,
 };
 let editingId = null;
 let filterPeriod = 'all';
@@ -1190,7 +1307,8 @@ let searchQuery = '';
 let sortField = 'date';
 let sortDir = 'desc';
 let monthChart = null;
-let calMonth = new Date(); calMonth.setDate(1);
+// jeden sdílený "zobrazený měsíc" pro celý přehled (hero, KPI, kalendář, dny, směny)
+let viewMonth = new Date(); viewMonth.setDate(1); viewMonth.setHours(0,0,0,0);
 
 /* ─── PERSISTENCE ────────────────────────────── */
 function load(){
@@ -1475,16 +1593,22 @@ const setRate = document.getElementById('set-rate');
 const setCur  = document.getElementById('set-currency');
 const setPos  = document.getElementById('set-curpos');
 const setFD   = document.getElementById('set-firstday');
+const setGoal = document.getElementById('set-goal');
 
+let _settingsBound = false;
 function bindSettings(){
   setRate.value = settings.defaultRate;
   setCur.value  = settings.currency;
   setPos.value  = settings.currencyPos;
   setFD.value   = settings.firstDay;
+  setGoal.value = settings.monthlyGoal || '';
+  if (_settingsBound) return; // hodnoty aktualizovat vždy, listenery jen jednou
+  _settingsBound = true;
   setRate.addEventListener('input', () => { settings.defaultRate = +setRate.value || 0; save(); render(); resetForm(); });
   setCur.addEventListener('change', () => { settings.currency = setCur.value; save(); render(); });
   setPos.addEventListener('change', () => { settings.currencyPos = setPos.value; save(); render(); });
   setFD.addEventListener('change',  () => { settings.firstDay = +setFD.value; save(); render(); });
+  setGoal.addEventListener('input', () => { settings.monthlyGoal = +setGoal.value || 0; save(); render(); });
 }
 
 document.getElementById('export-btn').addEventListener('click', () => {
@@ -1653,18 +1777,47 @@ function totals(list){
   return {min, earned};
 }
 
-function renderHero(){
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
-  const monthShifts = shifts.filter(s => {
+/* ── helpers pro měsíční pohled ── */
+function shiftsInMonth(monthDate){
+  const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const end   = new Date(monthDate.getFullYear(), monthDate.getMonth()+1, 1);
+  return shifts.filter(s => {
     const d = new Date(s.date + 'T00:00');
-    return d >= monthStart && d < monthEnd;
+    return d >= start && d < end;
   });
+}
+function isCurrentMonth(d){
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+/* Animovaný náběh čísla */
+function countUp(el, target, fmtFn){
+  const prev = parseFloat(el.dataset.cuPrev || '0');
+  if (prev === target){ el.textContent = fmtFn(target); return; }
+  el.dataset.cuPrev = target;
+  const dur = 700, t0 = performance.now();
+  const ease = x => 1 - Math.pow(1 - x, 3);
+  function frame(now){
+    const p = Math.min(1, (now - t0) / dur);
+    el.textContent = fmtFn(prev + (target - prev) * ease(p));
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function renderHero(){
+  const monthShifts = shiftsInMonth(viewMonth);
   const t = totals(monthShifts);
   const monthTips = monthShifts.reduce((a,s) => a + shiftTips(s), 0);
-  document.getElementById('hero-period').textContent = now.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'}).toUpperCase();
-  document.getElementById('hero-amount').textContent = Math.round(t.earned).toLocaleString('cs-CZ');
+  const isCur = isCurrentMonth(viewMonth);
+
+  document.getElementById('hero-period').textContent =
+    viewMonth.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'}).toUpperCase();
+  document.getElementById('hero-today').style.display = isCur ? 'none' : 'inline-block';
+
+  countUp(document.getElementById('hero-amount'), Math.round(t.earned),
+    v => Math.round(v).toLocaleString('cs-CZ'));
   document.getElementById('hero-currency').textContent = settings.currency;
   document.getElementById('hero-shifts').textContent = monthShifts.length;
   document.getElementById('hero-hours').textContent = fmtHours(t.min);
@@ -1672,7 +1825,52 @@ function renderHero(){
   document.getElementById('hero-rate').textContent = fmtMoney(avgRate) + '/h';
   document.getElementById('hero-tips-wrap').style.display = monthTips > 0 ? 'inline' : 'none';
   document.getElementById('hero-tips').textContent = fmtMoney(monthTips);
+
+  // srovnání s předchozím měsícem
+  const prevMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1);
+  const tPrev = totals(shiftsInMonth(prevMonth));
+  const cmp = document.getElementById('hero-compare');
+  if (tPrev.earned > 0 && t.earned > 0){
+    const diff = ((t.earned - tPrev.earned) / tPrev.earned) * 100;
+    const prevName = prevMonth.toLocaleDateString('cs-CZ', {month:'long'});
+    const dir = diff > 1 ? 'up' : diff < -1 ? 'down' : 'flat';
+    const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '→';
+    cmp.className = dir;
+    cmp.textContent = `${arrow} ${diff >= 0 ? '+' : ''}${diff.toFixed(0)} % vs ${prevName}`;
+    cmp.style.display = 'inline-flex';
+  } else {
+    cmp.style.display = 'none';
+  }
+
+  // měsíční cíl
+  const goalWrap = document.getElementById('goal-wrap');
+  const goal = +settings.monthlyGoal || 0;
+  if (goal > 0){
+    goalWrap.style.display = 'block';
+    const pct = Math.min(100, (t.earned / goal) * 100);
+    const fill = document.getElementById('goal-fill');
+    requestAnimationFrame(() => { fill.style.width = pct.toFixed(1) + '%'; });
+    fill.classList.toggle('done', t.earned >= goal);
+    document.getElementById('goal-pct').textContent = pct.toFixed(0) + ' %';
+    document.getElementById('goal-sub').textContent = t.earned >= goal
+      ? `Cíl splněn! ${fmtMoney(t.earned)} z ${fmtMoney(goal)} (+${fmtMoney(t.earned - goal)})`
+      : `${fmtMoney(t.earned)} z ${fmtMoney(goal)} · chybí ${fmtMoney(goal - t.earned)}`;
+  } else {
+    goalWrap.style.display = 'none';
+  }
 }
+
+/* přepínání měsíce */
+function shiftViewMonth(delta){
+  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + delta, 1);
+  render();
+}
+document.getElementById('hero-prev').addEventListener('click', () => shiftViewMonth(-1));
+document.getElementById('hero-next').addEventListener('click', () => shiftViewMonth(1));
+document.getElementById('hero-today').addEventListener('click', () => {
+  viewMonth = new Date(); viewMonth.setDate(1); viewMonth.setHours(0,0,0,0);
+  render();
+});
 
 function renderKPIs(){
   const now = new Date();
@@ -1684,29 +1882,45 @@ function renderKPIs(){
     return d >= weekStart && d < weekEnd;
   }));
 
-  // header
+  // header — vždy aktuální (nezávisle na zobrazeném měsíci)
   document.getElementById('hs-total').textContent = fmtMoney(all.earned);
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
-  const monthEarned = shifts.filter(s => {
-    const d = new Date(s.date + 'T00:00');
-    return d >= monthStart && d < monthEnd;
-  }).reduce((a,s) => a + shiftEarned(s), 0);
-  document.getElementById('hs-month').textContent = fmtMoney(monthEarned);
+  const curMonth = new Date(); curMonth.setDate(1);
+  const curMonthEarned = totals(shiftsInMonth(curMonth)).earned;
+  document.getElementById('hs-month').textContent = fmtMoney(curMonthEarned);
   document.getElementById('hs-hours').textContent = fmtHours(all.min);
 
-  // kpis
+  // ── KPI: zobrazený měsíc ──
+  const monthShifts = shiftsInMonth(viewMonth);
+  const m = totals(monthShifts);
+  const mTips = monthShifts.reduce((a,s) => a + shiftTips(s), 0);
+  const monthName = viewMonth.toLocaleDateString('cs-CZ', {month:'long'});
+
   document.getElementById('kpi-week').textContent = fmtMoney(week.earned);
   document.getElementById('kpi-week-sub').textContent = fmtHours(week.min);
-  document.getElementById('kpi-total').textContent = fmtMoney(all.earned);
-  document.getElementById('kpi-total-sub').textContent = `${shifts.length} ${pluralCS(shifts.length,'směna','směny','směn')}`;
-  document.getElementById('kpi-hours').textContent = fmtHours(all.min);
-  document.getElementById('kpi-hours-sub').textContent = `${shifts.length} ${pluralCS(shifts.length,'směna','směny','směn')}`;
 
-  const avgEarned = shifts.length ? all.earned / shifts.length : 0;
-  const avgMin = shifts.length ? all.min / shifts.length : 0;
+  document.getElementById('kpi-hours').textContent = fmtHours(m.min);
+  document.getElementById('kpi-hours-sub').textContent =
+    `${monthShifts.length} ${pluralCS(monthShifts.length,'směna','směny','směn')} · ${monthName}`;
+
+  const avgEarned = monthShifts.length ? m.earned / monthShifts.length : 0;
+  const avgMin = monthShifts.length ? m.min / monthShifts.length : 0;
   document.getElementById('kpi-avg-shift').textContent = fmtMoney(avgEarned);
   document.getElementById('kpi-avg-shift-sub').textContent = fmtDuration(Math.round(avgMin));
+
+  const hourly = m.min > 0 ? m.earned / (m.min/60) : 0;
+  document.getElementById('kpi-hourly').textContent = fmtMoney(hourly) + '/h';
+  document.getElementById('kpi-hourly-sub').textContent = hourly > 0
+    ? `${hourly >= settings.defaultRate ? '+' : ''}${Math.round(hourly - settings.defaultRate)} vs sazba ${settings.defaultRate}`
+    : 'mzda + dýška / hodina';
+
+  document.getElementById('kpi-tips').textContent = fmtMoney(mTips);
+  document.getElementById('kpi-tips-sub').textContent = m.earned > 0 && mTips > 0
+    ? `${((mTips / m.earned) * 100).toFixed(0)} % výdělku`
+    : monthName;
+
+  document.getElementById('kpi-total').textContent = fmtMoney(all.earned);
+  document.getElementById('kpi-total-sub').textContent =
+    `${shifts.length} ${pluralCS(shifts.length,'směna','směny','směn')} · za vše`;
 }
 
 function renderMonthChart(){
@@ -1789,11 +2003,13 @@ function renderWeekdayBreakdown(){
   const short = ['Ne','Po','Út','St','Čt','Pá','So'];
   const order = settings.firstDay === 1 ? [1,2,3,4,5,6,0] : [0,1,2,3,4,5,6];
   const totals = order.map(i => ({i, name: window.innerWidth < 640 ? short[i] : days[i], earned:0, count:0}));
-  shifts.forEach(s => {
+  shiftsInMonth(viewMonth).forEach(s => {
     const d = new Date(s.date + 'T00:00').getDay();
     const t = totals.find(x => x.i === d);
     if (t){ t.earned += shiftEarned(s); t.count++; }
   });
+  const sub = document.getElementById('weekday-sub');
+  if (sub) sub.textContent = viewMonth.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'});
   const max = Math.max(...totals.map(t => t.earned), 1);
   const wrap = document.getElementById('weekday-bd');
   wrap.innerHTML = totals.map(t => `
@@ -1807,21 +2023,16 @@ function renderWeekdayBreakdown(){
 }
 
 /* ─── CALENDAR ──────────────────────────────── */
-document.getElementById('cal-prev').addEventListener('click', () => {
-  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1);
-  renderCalendar();
-});
-document.getElementById('cal-next').addEventListener('click', () => {
-  calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1);
-  renderCalendar();
-});
+// kalendář sdílí viewMonth s hero — šipky přepnou celý přehled
+document.getElementById('cal-prev').addEventListener('click', () => shiftViewMonth(-1));
+document.getElementById('cal-next').addEventListener('click', () => shiftViewMonth(1));
 
 function renderCalendar(){
-  const year = calMonth.getFullYear();
-  const month = calMonth.getMonth();
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
   const todayIso = todayISO();
 
-  document.getElementById('cal-label').textContent = calMonth.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'});
+  document.getElementById('cal-label').textContent = viewMonth.toLocaleDateString('cs-CZ', {month:'long', year:'numeric'});
 
   const daysShort = ['Ne','Po','Út','St','Čt','Pá','So'];
   const order = settings.firstDay === 1 ? [1,2,3,4,5,6,0] : [0,1,2,3,4,5,6];
@@ -1923,10 +2134,14 @@ function renderUpcoming(){
 }
 
 function renderRecent(){
-  const last = [...shifts].sort((a,b) => (b.date+b.start).localeCompare(a.date+a.start)).slice(0,5);
+  const monthShifts = shiftsInMonth(viewMonth);
+  const last = [...monthShifts].sort((a,b) => (b.date+b.start).localeCompare(a.date+a.start));
   const body = document.getElementById('recent-body');
+  const sub = document.getElementById('recent-sub');
+  if (sub) sub.textContent = `${last.length} ${pluralCS(last.length,'směna','směny','směn')}`;
   if (last.length === 0){
-    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">⏱</div><h3>Zatím žádné směny</h3><p>Klikni na <strong>+ Nová směna</strong> a začni evidovat.</p></div></td></tr>`;
+    const mn = viewMonth.toLocaleDateString('cs-CZ', {month:'long'});
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">⏱</div><h3>Žádné směny v ${mn}</h3><p>Přepni měsíc šipkami nahoře, nebo přidej směnu.</p></div></td></tr>`;
     return;
   }
   body.innerHTML = last.map(s => {
