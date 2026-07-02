@@ -1108,6 +1108,87 @@ td:nth-child(9){max-width:240px;overflow:hidden;text-overflow:ellipsis;}
   .glass{background:#fff!important;border:1px solid #ddd;backdrop-filter:none;}
 }
 
+/* ─── HERO P&L (redesign) ───────────────────── */
+.hero-pl{
+  display:flex;align-items:center;justify-content:space-between;gap:28px;
+  padding:30px 34px;margin-bottom:16px;position:relative;overflow:hidden;
+  border-radius:var(--radius-lg);
+}
+.hero-pl-glow{
+  position:absolute;top:-80px;right:-40px;width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,rgba(52,211,153,0.15),transparent 65%);
+  filter:blur(30px);pointer-events:none;transition:background .6s ease;
+}
+.hero-pl-glow.neg{background:radial-gradient(circle,rgba(251,113,133,0.15),transparent 65%);}
+.hero-pl-left{position:relative;z-index:1;min-width:0;}
+.hero-pl-label{
+  font-size:10px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.22em;font-weight:700;margin-bottom:10px;
+}
+.hero-pl-value{
+  font-family:var(--fira);font-size:54px;font-weight:600;
+  letter-spacing:-0.03em;line-height:1;margin-bottom:10px;
+  font-variant-numeric:tabular-nums;
+}
+.hero-pl-sub{font-size:12px;color:var(--text-dim);font-family:var(--fira);}
+.hero-pl-sub .sep{color:var(--muted-2);margin:0 8px;}
+.hero-pl-right{position:relative;z-index:1;flex-shrink:0;}
+.hero-ring{position:relative;width:124px;height:124px;}
+.hero-ring svg{width:124px;height:124px;transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(140,155,220,0.12);stroke-width:9;}
+.ring-fill{
+  fill:none;stroke:#5eead4;stroke-width:9;stroke-linecap:round;
+  stroke-dasharray:326.7;stroke-dashoffset:326.7;
+  transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1), stroke .4s;
+  filter:drop-shadow(0 0 6px rgba(94,234,212,0.45));
+}
+.ring-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;
+}
+.ring-val{font-family:var(--fira);font-size:24px;font-weight:600;letter-spacing:-0.02em;}
+.ring-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.18em;font-weight:600;}
+
+/* ─── MORE STATS (collapsible) ──────────────── */
+.more-stats-card{padding:0!important;margin-bottom:16px;}
+.more-stats-toggle{
+  width:100%;display:flex;align-items:center;gap:10px;
+  padding:16px 22px;background:none;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:11px;font-weight:700;
+  letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);
+  transition:color .2s;position:relative;z-index:1;
+}
+.more-stats-toggle:hover{color:var(--text);}
+.more-stats-toggle .chev{width:15px;height:15px;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.more-stats-card.open .more-stats-toggle .chev{transform:rotate(180deg);}
+.more-stats-body{padding:4px 20px 20px;position:relative;z-index:1;}
+
+/* ─── MICROINTERACTIONS (redesign) ──────────── */
+.tab:active{transform:scale(0.95);}
+.kpi:hover .kpi-value{transform:scale(1.04);}
+.kpi .kpi-value{transition:transform .25s cubic-bezier(.4,0,.2,1);display:inline-block;}
+.section.active .kpi{animation:fadeUp .45s cubic-bezier(.4,0,.2,1) both;}
+.section.active .kpi:nth-child(1){animation-delay:.02s;}
+.section.active .kpi:nth-child(2){animation-delay:.06s;}
+.section.active .kpi:nth-child(3){animation-delay:.10s;}
+.section.active .kpi:nth-child(4){animation-delay:.14s;}
+.section.active .kpi:nth-child(5){animation-delay:.18s;}
+.section.active .kpi:nth-child(6){animation-delay:.22s;}
+.kpi-value{font-size:26px;}
+
+/* accent stripes per-KPI */
+.kpi.acc-cyan{border-left:2px solid rgba(94,234,212,0.45);}
+.kpi.acc-violet{border-left:2px solid rgba(167,139,250,0.45);}
+.kpi.acc-win{border-left:2px solid rgba(52,211,153,0.45);}
+.kpi.acc-loss{border-left:2px solid rgba(251,113,133,0.45);}
+.kpi.acc-amber{border-left:2px solid rgba(251,191,36,0.45);}
+
+@media(max-width:720px){
+  .hero-pl{flex-direction:column;align-items:flex-start;padding:24px;gap:20px;}
+  .hero-pl-value{font-size:40px;}
+  .hero-pl-right{align-self:center;}
+}
+
 /* Reduced motion — respekt k uživatelům co nemají rádi animace */
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{
@@ -1343,10 +1424,6 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
     <span class="txt">Výkonnost</span>
   </button>
-  <button class="tab" data-tab="risk">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
-    <span class="txt">Risk</span>
-  </button>
   <button class="tab" data-tab="sectors">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 12A9.5 9.5 0 1 1 12 2.5"/><path d="M12 2.5V12h9.5"/></svg>
     <span class="txt">Sektory</span>
@@ -1358,14 +1435,6 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
   <button class="tab" data-tab="trades">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     <span class="txt">Trady</span>
-  </button>
-  <button class="tab" data-tab="journal">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span class="txt">Deníček</span>
-  </button>
-  <button class="tab" data-tab="analysis">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-    <span class="txt">Analýza</span>
   </button>
   <button class="tab" data-tab="benchmark">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
@@ -1385,7 +1454,41 @@ window.addEventListener('load', () => setTimeout(window.__fbLoad, 600));
 <!--    OVERVIEW                                          -->
 <!-- ═══════════════════════════════════════════════════ -->
 <section class="section active" id="tab-overview">
+
+  <!-- HERO — celkový výsledek -->
+  <div class="hero-pl glass" id="heroPL">
+    <div class="hero-pl-glow" id="heroGlow"></div>
+    <div class="hero-pl-left">
+      <div class="hero-pl-label" id="heroLabel">Celkový P&L</div>
+      <div class="hero-pl-value" id="heroValue">$0</div>
+      <div class="hero-pl-sub" id="heroSub">—</div>
+    </div>
+    <div class="hero-pl-right">
+      <div class="hero-ring" id="heroRing">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-val" id="ringVal">—</div>
+          <div class="ring-label">Win rate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- Sbalitelné pokročilé statistiky -->
+  <div class="card glass more-stats-card">
+    <button class="more-stats-toggle" id="moreStatsToggle" type="button">
+      <span class="dot"></span>Více statistik
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="more-stats-body" id="moreStatsBody" style="display:none;">
+      <div class="kpi-grid" id="moreStatsGrid" style="margin-bottom:0;"></div>
+    </div>
+  </div>
 
   <div class="big-card glass">
     <div class="card-head">
@@ -3422,6 +3525,34 @@ function renderHeader() {
 /* ═══════════════════════════════════════════════════════════════════
    OVERVIEW KPIs
    ═══════════════════════════════════════════════════════════════════ */
+/* Animated count-up — plynulý náběh čísla (redesign) */
+function countUp(el, target, fmtFn) {
+  const prev = parseFloat(el.dataset.cuPrev || '0');
+  if (prev === target) { el.textContent = fmtFn(target); return; }
+  el.dataset.cuPrev = target;
+  const dur = 900, t0 = performance.now();
+  const ease = x => 1 - Math.pow(1 - x, 3); // easeOutCubic
+  function frame(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    el.textContent = fmtFn(prev + (target - prev) * ease(p));
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* Toggle „Více statistik" */
+(function(){
+  const tgl = document.getElementById('moreStatsToggle');
+  if (!tgl) return;
+  tgl.addEventListener('click', () => {
+    const card = tgl.closest('.more-stats-card');
+    const body = document.getElementById('moreStatsBody');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    card.classList.toggle('open', !open);
+  });
+})();
+
 function renderKPIs() {
   const closed = getClosed();
   const wins = getWins();
@@ -3456,24 +3587,86 @@ function renderKPIs() {
     ? `realiz. ${pl>=0?'+':''}$${pl.toFixed(0)} + unrealiz. ${unrealized>=0?'+':''}$${unrealized.toFixed(0)} (${unrealizedCount}/${getOpen().length} poz.)`
     : 'aktivuj live ceny → ⚙ v Otevřené pozice';
 
+  /* ── HERO ── */
+  const heroVal = document.getElementById('heroValue');
+  if (heroVal) {
+    const heroTotal = hasLive ? totalIncOpen : pl;
+    document.getElementById('heroLabel').textContent = hasLive ? 'Celkový P&L · vč. otevřených' : 'Realizovaný P&L';
+    heroVal.className = 'hero-pl-value ' + clr(heroTotal);
+    countUp(heroVal, heroTotal, v => (v>=0?'+':'−') + '$' + Math.abs(v).toLocaleString('en-US', {maximumFractionDigits:0}));
+    const glow = document.getElementById('heroGlow');
+    if (glow) glow.classList.toggle('neg', heroTotal < 0);
+    const heroSub = document.getElementById('heroSub');
+    if (heroSub) {
+      heroSub.innerHTML = hasLive
+        ? `realiz. ${fmt$round(pl)}<span class="sep">·</span>otevřené ${unrealized>=0?'+':''}$${unrealized.toFixed(0)}<span class="sep">·</span>${closed.length} uzavřených tradů`
+        : `${closed.length} uzavřených tradů<span class="sep">·</span>${getOpen().length} otevřených`;
+    }
+    // Win-rate ring
+    const ringFill = document.getElementById('ringFill');
+    const ringVal = document.getElementById('ringVal');
+    if (ringFill && ringVal) {
+      const C = 326.7;
+      const wrNum = parseFloat(wr) || 0;
+      requestAnimationFrame(() => { ringFill.style.strokeDashoffset = (C * (1 - wrNum/100)).toFixed(1); });
+      ringFill.style.stroke = wrNum >= 50 ? '#34d399' : wrNum >= 40 ? '#5eead4' : '#fbbf24';
+      ringVal.textContent = wr + '%';
+      ringVal.className = 'ring-val ' + (wrNum >= 50 ? 'positive' : wrNum >= 40 ? 'neutral' : 'amber-color');
+    }
+  }
+
+  /* ── CORE KPIs ── */
   const kpis = [
-    {label:'Realizovaný P&L', val: fmt$round(pl), sub:'pouze uzavřené trady', cls: clr(pl)},
-    {label:'Celkem vč. otevřených', val: fmt$round(totalIncOpen), sub: allInSub, cls: hasLive ? clr(totalIncOpen) : 'neutral'},
-    {label:'Win Rate', val: wr+'%', sub:`${wins.length} výher / ${losses.length} ztrát`, cls:'neutral'},
-    {label:'Profit Factor', val: pf+'×', sub:'výhry / ztráty celkem', cls:'violet-color'},
-    {label:'Avg výhra', val: fmt$round(avgWin), sub:`průměr z ${wins.length} výher`, cls:'positive'},
-    {label:'Avg ztráta', val: fmt$round(avgLoss), sub:`průměr z ${losses.length} ztrát`, cls:'negative'},
-    {label:'Reward/Risk', val: rr+'×', sub:'avg výhra / avg ztráta', cls:'amber-color'},
-    {label:'Expectancy', val: fmt$(exp), sub:'průměr $ / trade', cls: clr(parseFloat(exp))},
-    {label:'Otevřené pozice', val: getOpen().length, sub:'aktivní trade', cls:'neutral'},
+    {label:'Profit Factor', val: pf+'×', sub:'výhry / ztráty celkem', cls:'violet-color', acc:'acc-violet'},
+    {label:'Expectancy', val: fmt$(exp), sub:'průměr $ / trade', cls: clr(parseFloat(exp)), acc:'acc-cyan'},
+    {label:'Avg výhra', val: fmt$round(avgWin), sub:`z ${wins.length} výher`, cls:'positive', acc:'acc-win'},
+    {label:'Avg ztráta', val: fmt$round(avgLoss), sub:`z ${losses.length} ztrát`, cls:'negative', acc:'acc-loss'},
+    {label:'Reward/Risk', val: rr+'×', sub:'avg výhra / avg ztráta', cls:'amber-color', acc:'acc-amber'},
+    {label:'Otevřené pozice', val: getOpen().length, sub:'aktivní trady', cls:'neutral', acc:'acc-cyan'},
   ];
   document.getElementById('kpiGrid').innerHTML = kpis.map(k =>
-    `<div class="kpi glass">
+    `<div class="kpi glass ${k.acc||''}">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value ${k.cls}">${k.val}</div>
       <div class="kpi-sub">${k.sub}</div>
     </div>`
   ).join('');
+
+  /* ── MORE STATS (z Risk/Analýzy) ── */
+  const msGrid = document.getElementById('moreStatsGrid');
+  if (msGrid) {
+    let more = [];
+    try {
+      const mdd = getMaxDrawdown();
+      more.push({label:'Max Drawdown', val: fmt$round(mdd.value), sub:`${mdd.pct.toFixed(1)}% z peaku`, cls:'negative'});
+    } catch(e){}
+    try {
+      const streaks = getStreaks();
+      const winStreaks = streaks.all.filter(s => s.type === 'win');
+      const lossStreaks = streaks.all.filter(s => s.type === 'loss');
+      const maxWinStreak = winStreaks.length ? Math.max(...winStreaks.map(s=>s.length)) : 0;
+      const maxLossStreak = lossStreaks.length ? Math.max(...lossStreaks.map(s=>s.length)) : 0;
+      let cur = {type:'—', length:0};
+      if (streaks.all.length) cur = streaks.all[streaks.all.length-1];
+      more.push({label:'Aktuální streak', val: cur.length + (cur.type==='win'?'W':cur.type==='loss'?'L':''), sub: cur.type==='win'?'výhry v řadě':cur.type==='loss'?'ztráty v řadě':'—', cls: cur.type==='win'?'positive':cur.type==='loss'?'negative':'neutral'});
+      more.push({label:'Max win streak', val: maxWinStreak+'×', sub:'výher v řadě', cls:'positive'});
+      more.push({label:'Max loss streak', val: maxLossStreak+'×', sub:'ztrát v řadě', cls:'negative'});
+    } catch(e){}
+    if (closed.length) {
+      const largestWin = closed.reduce((m,t) => t.pl > m.pl ? t : m, closed[0]);
+      const largestLoss = closed.reduce((m,t) => t.pl < m.pl ? t : m, closed[0]);
+      more.push({label:'Largest win', val: fmt$round(largestWin.pl), sub: largestWin.stock, cls:'positive'});
+      more.push({label:'Largest loss', val: fmt$round(largestLoss.pl), sub: largestLoss.stock, cls:'negative'});
+    }
+    more.push({label:'Realizovaný P&L', val: fmt$round(pl), sub:'pouze uzavřené trady', cls: clr(pl)});
+    msGrid.innerHTML = more.map(k =>
+      `<div class="kpi glass">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value ${k.cls}">${k.val}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>`
+    ).join('');
+  }
 
   // Equity subtitle
   const es = document.getElementById('equitySub');
