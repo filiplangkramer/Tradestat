@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Právo">
+<title>Právo — Příprava na test</title>
+<link rel="manifest" href="manifest.webmanifest">
+<script src="../pwa-update.js" defer></script>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#0a0d18;--bg-1:#11152a;
+  --surface:rgba(255,255,255,0.05);--surface-2:rgba(255,255,255,0.08);
+  --line:rgba(255,255,255,0.10);--line-2:rgba(255,255,255,0.18);
+  --text:#eef0f5;--text-dim:#a5acc0;--muted:#666c80;
+  --cyan:#5eead4;--amber:#e8b25a;--amber-2:#d99c4d;
+  --l0:#fb7185;--l1:#fbbf24;--l2:#a3e635;--l3:#34d399;--lx:#4a5068;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{overflow-x:hidden}
+body{
+  background:var(--bg-0);color:var(--text);font-family:var(--sans);
+  min-height:100vh;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 15%,rgba(232,178,90,0.10),transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 85%,rgba(94,234,212,0.08),transparent 60%);
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ─── auth overlay ─── */
+#auth-overlay{
+  position:fixed;inset:0;background:var(--bg-0);z-index:99999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+}
+#auth-overlay .ov-mark{
+  width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#f5c26b 0%,#d99c4d 100%);color:#1a1208;
+  box-shadow:0 8px 28px rgba(232,178,90,0.3);margin-bottom:6px;
+}
+#auth-overlay .ov-mark svg{width:32px;height:32px}
+#auth-overlay .ov-title{font-family:var(--serif);font-size:36px;letter-spacing:-0.02em;line-height:1}
+#auth-overlay .ov-title em{font-style:italic;color:var(--amber)}
+#auth-overlay .ov-msg{font-size:13px;color:var(--text-dim)}
+#auth-overlay .ov-spinner{width:26px;height:26px;border:2px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-top:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+body.app-ready #auth-overlay{display:none}
+
+/* ─── user bar ─── */
+#user-bar{
+  position:fixed;z-index:1000;display:none;align-items:center;gap:8px;
+  top:calc(14px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));
+  background:rgba(20,25,45,0.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:32px;padding:5px 10px 5px 6px;font-size:12px;color:var(--text-dim);
+}
+#user-bar .back{color:var(--amber);display:flex;align-items:center;padding:0 2px}
+#user-bar .back svg{width:16px;height:16px}
+#user-bar .photo{width:24px;height:24px;border-radius:50%}
+#user-bar .logout{background:none;border:none;color:var(--muted);padding:2px 4px;border-radius:12px}
+#user-bar .logout:hover{color:var(--text)}
+
+/* ─── layout ─── */
+.app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:64px 18px 64px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.brand-mark{
+  width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:linear-gradient(135deg,#f5c26b 0%,#d99c4d 100%);color:#1a1208;box-shadow:0 6px 20px rgba(232,178,90,0.3);
+}
+.brand-mark svg{width:24px;height:24px}
+.title{font-family:var(--serif);font-size:34px;line-height:1;letter-spacing:-0.02em}
+.title em{font-style:italic;color:var(--amber)}
+.sub{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.22em;color:var(--text-dim);margin-top:4px}
+.lead{color:var(--text-dim);margin:0 0 18px;font-size:13.5px}
+
+.tabs{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:20px}
+.tab{padding:8px 18px;border-radius:9px;border:none;background:transparent;color:var(--text-dim);font-weight:600;font-size:13px;transition:all .2s}
+.tab:hover:not([aria-selected="true"]){color:var(--text)}
+.tab[aria-selected="true"]{background:linear-gradient(135deg,#f5c26b 0%,#d99c4d 100%);color:#1a1208;box-shadow:0 4px 18px rgba(232,178,90,0.3)}
+
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;
+  position:relative;
+}
+.panel::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,0.05) 0%,transparent 40%)}
+.big{font-family:var(--mono);font-size:40px;font-weight:600;line-height:1;background:linear-gradient(135deg,#f5c26b,#5eead4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.note{font-size:12px;color:var(--text-dim);margin-top:6px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--surface);margin:14px 0 10px}
+.bar span{display:block;height:100%;transition:width .4s}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-dim)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 12px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--text-dim);border-radius:999px;padding:6px 13px;font-weight:600;font-size:12px;transition:all .2s}
+.chip:hover{border-color:var(--line-2);color:var(--text)}
+.chip[aria-pressed="true"]{background:rgba(232,178,90,.14);border-color:rgba(232,178,90,.5);color:var(--amber)}
+
+.row{
+  background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--lx);border-radius:14px;
+  padding:13px 16px;margin-bottom:8px;display:grid;grid-template-columns:2.4em 1fr;gap:4px 8px;transition:border-color .2s;
+}
+.row:hover{border-color:var(--line-2)}
+.row[data-l="0"]{border-left-color:var(--l0)}.row[data-l="1"]{border-left-color:var(--l1)}
+.row[data-l="2"]{border-left-color:var(--l2)}.row[data-l="3"]{border-left-color:var(--l3)}
+.num{color:var(--muted);font:600 12px var(--mono);padding-top:3px}
+.ttl{background:none;border:0;padding:0;text-align:left;color:var(--text);font:500 14px/1.45 var(--sans)}
+.ttl:hover{color:var(--amber)}
+.seg{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lv{border:1px solid var(--line);background:transparent;color:var(--text-dim);border-radius:8px;padding:6px 13px;min-height:36px;font-weight:600;font-size:12px;transition:all .2s}
+.lv:hover{border-color:var(--line-2);color:var(--text)}
+.lv[aria-pressed="true"]{color:#0a0d18;border-color:transparent}
+.lv[data-k="0"][aria-pressed="true"]{background:var(--l0)}.lv[data-k="1"][aria-pressed="true"]{background:var(--l1)}
+.lv[data-k="2"][aria-pressed="true"]{background:var(--l2)}.lv[data-k="3"][aria-pressed="true"]{background:var(--l3)}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:4px 0 12px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--text-dim);border-radius:10px;padding:9px 16px;font-weight:600;font-size:13px;min-height:40px;transition:all .2s}
+.btn:hover{border-color:var(--amber);color:var(--amber)}
+.btn.pri{background:linear-gradient(135deg,#f5c26b 0%,#d99c4d 100%);color:#1a1208;border-color:transparent;box-shadow:0 4px 18px rgba(232,178,90,0.28)}
+.btn.pri:hover{color:#1a1208;transform:translateY(-1px)}
+.btn.danger{background:rgba(251,113,133,0.12);color:var(--l0);border-color:rgba(251,113,133,0.3)}
+.btn.danger:hover{background:rgba(251,113,133,0.2);border-color:var(--l0);color:var(--l0)}
+
+.card{padding:26px 24px;min-height:260px;cursor:pointer}
+.card .no{font:500 11px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.card h2{font-family:var(--serif);font-weight:400;font-size:27px;line-height:1.3}
+.card.back h2{font-size:21px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.hint{color:var(--text-dim);margin-top:30px;font-size:13px}
+.txt{font:400 14.5px/1.65 var(--sans);max-width:70ch}
+.txt p{margin:.5em 0}
+.txt h4{font:700 13px/1.3 var(--sans);color:var(--amber);margin:1.1em 0 .3em}
+.txt strong{color:#fff}
+.li{position:relative;padding-left:1.1em;margin:.3em 0}
+.li::before{content:"•";position:absolute;left:0;color:var(--amber)}
+.l2{margin-left:1.2em}.l3{margin-left:2.4em}
+.nav{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap}
+.rate{margin-top:14px;padding:16px 20px}
+.rate p{margin:0 0 8px;font-weight:600;font-size:13px}
+.rate .seg{margin-top:0}
+.empty{padding:28px;text-align:center;color:var(--text-dim)}
+.foot{margin-top:28px;text-align:center;font:11px var(--mono);letter-spacing:.08em;color:var(--muted)}
+@media (max-width:560px){
+  .app{padding-top:60px}
+  .title{font-size:28px}
+  .card{padding:22px 18px}
+  .btn{padding:9px 12px}
+}
+</style>
+
+<!-- Firebase Cloud Sync -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const LS_KEYS = ['pravo.znalosti.v1'];
+
+const fb = initializeApp({
+  apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",
+  authDomain:"tradestat-18e24.firebaseapp.com",
+  projectId:"tradestat-18e24",
+  storageBucket:"tradestat-18e24.firebasestorage.app",
+  messagingSenderId:"1081488272976",
+  appId:"1:1081488272976:web:65156e690afc02bb682b55"
+});
+const db = getFirestore(fb);
+const auth = getAuth(fb);
+
+function setOvMsg(msg){
+  const m = document.querySelector('#auth-overlay .ov-msg');
+  if (m) m.textContent = msg;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user){
+    // Nepřihlášený → zpět do launcheru
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+    location.replace('../');
+    return;
+  }
+
+  const uid = user.uid;
+  setOvMsg('Načítám tvá data…');
+
+  // Začni s čistým localStorage, abychom nezobrazili cizí data
+  LS_KEYS.forEach(k => localStorage.removeItem(k));
+
+  const map = [ {fb:'law', ls:'pravo.znalosti.v1'} ];
+
+  for (const k of map){
+    try {
+      const snap = await getDoc(doc(db, 'users', uid, 'data', k.fb));
+      if (snap.exists()) localStorage.setItem(k.ls, snap.data().v);
+    } catch(e){ console.warn('[FB load]', k.fb, e); }
+  }
+
+  try { if (typeof window.loadLaw === 'function') window.loadLaw(); } catch(e){ console.error(e); }
+  try { if (typeof window.renderLaw === 'function') window.renderLaw(); } catch(e){ console.error(e); }
+
+  // User bar
+  const bar = document.getElementById('user-bar');
+  if (bar){
+    const ph = document.getElementById('user-photo');
+    const nm = document.getElementById('user-name');
+    if (user.photoURL){ ph.src = user.photoURL; ph.style.display = 'block'; }
+    else ph.style.display = 'none';
+    nm.textContent = user.displayName || user.email;
+    bar.style.display = 'flex';
+  }
+
+  // Real-time sync
+  if (window.__fbUnsubs) window.__fbUnsubs.forEach(u => { try{ u(); }catch(e){} });
+  window.__fbUnsubs = [];
+  map.forEach(k => {
+    const unsub = onSnapshot(doc(db, 'users', uid, 'data', k.fb), (snap) => {
+      if (!snap.exists()) return;
+      if (window.__ignoreNext && window.__ignoreNext[k.fb]){
+        window.__ignoreNext[k.fb] = false;
+        return;
+      }
+      const newV = snap.data().v;
+      const lsV = localStorage.getItem(k.ls);
+      if (newV !== lsV){
+        localStorage.setItem(k.ls, newV);
+        try { if (typeof window.loadLaw === 'function') window.loadLaw(); } catch(e){}
+        try { if (typeof window.renderLaw === 'function') window.renderLaw(); } catch(e){}
+        console.log(`[FB sync] ${k.fb} updated from another device`);
+      }
+    }, (err) => console.warn(`[FB sync] ${k.fb} error:`, err));
+    window.__fbUnsubs.push(unsub);
+  });
+
+  // Save hook
+  window.__fbSave = async (key, data) => {
+    try {
+      if (!window.__ignoreNext) window.__ignoreNext = {};
+      window.__ignoreNext[key] = true;
+      await setDoc(doc(db, 'users', uid, 'data', key), {v: JSON.stringify(data)});
+    } catch(e){ console.warn('[FB save]', key, e); }
+  };
+
+  document.body.classList.add('app-ready');
+});
+
+window.__signOut = () => {
+  if (confirm('Odhlásit se?')){
+    LS_KEYS.forEach(k => localStorage.removeItem(k));
+    signOut(auth);
+  }
+};
+</script>
+</head>
+<body>
+
+<div id="auth-overlay">
+  <div class="ov-mark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6 21h12"/><path d="M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0z"/><path d="M19 7l-3 7a3 3 0 0 0 6 0z"/></svg>
+  </div>
+  <div class="ov-title">Prá<em>vo</em></div>
+  <div class="ov-msg">Načítám…</div>
+  <div class="ov-spinner"></div>
+</div>
+
+<div id="user-bar">
+  <a class="back" href="../" title="Zpět na výběr aplikací">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <img class="photo" id="user-photo" alt="">
+  <span class="name" id="user-name">—</span>
+  <button class="logout" id="logout-btn" title="Odhlásit">✕</button>
+</div>
+
+<main class="app">
+  <header class="topbar">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6 21h12"/><path d="M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0z"/><path d="M19 7l-3 7a3 3 0 0 0 6 0z"/></svg>
+    </div>
+    <div>
+      <div class="title">Prá<em>vo</em></div>
+      <div class="sub">Příprava na test</div>
+    </div>
+  </header>
+  <p class="lead">Hodnoť, jak dobře které téma umíš, a procvičuj ho na kartičkách.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-ov" aria-selected="true">Přehled témat</button>
+    <button class="tab" role="tab" id="t-cd" aria-selected="false">Kartičky</button>
+  </div>
+  <section id="ov"></section>
+  <section id="cd" hidden></section>
+  <p class="foot">Hodnocení se ukládá do Firebase · synchronizace napříč zařízeními</p>
+</main>
+
+<script>
+const T = [{"id":1,"title":"Právo - objektivní a subjektivní smysl, systém práva, mezinárodní a vnitrostátní právo, Evropské právo","html":"<p><strong>Právo <\/strong>= soubor pravidel chování, která jsou vytvořena a vynutitelná státem<\/p><p><strong>Objektivní právo <\/strong>= soubor pravidel a norem, která jsou platná pro všechny. Jsou státem vytvořené a vynutitelné<\/p><p><strong>Subjektivní právo <\/strong>= právo člověka něco dělat a jak se chovat v dané situaci(já mám právo na …), spadá pod objektivní právo<\/p><h4>Systém práva<\/h4><div class=\"li l1\">Veřejné - řeší vztahy mezi státem a občanem, hají společenské zájmy v trestním, správním, ústavní a finanční právo<\/div><div class=\"li l1\">Soukromý - řeší vztahy mezi jednotlivci (občan x občan), zde patří občanské, obchodní či rodinné právo<\/div><div class=\"li l1\">Hmotné - určuje jaká práva a povinnosti lidé mají. Například trestní právo stanoví jaké chování je trestné<\/div><div class=\"li l1\">Procesní - postup jak se práva a povinnosti uplatňují. Například jak probíhá soudní řízení<\/div><p><strong>Mezinárodní právo <\/strong>= upravuje vztahy mezi státy Vnitrostátní právo = upravuje vztahy v rámci daného státu<\/p><p><strong>Evropské právo <\/strong>= platí pro státy EU, sjednocuje pravidla mezi státy, aby se lépe spolupracovalo<\/p><div class=\"li l1\">primární - společenské smlouvy, například smlouvy zakládající EU (Maastrichtská nebo Lisabonská smlouva)<\/div><div class=\"li l1\">sekundární - konkrétní nařízení, směrnice, rozhodnutí, která se musí dodržovat<\/div>"},{"id":2,"title":"Prameny práva obecně a v ČR, Ústavní pořádek ČR, Prameny soukromého a obchodního práva, působnost právních norem, legislativní proces v ČR","html":"<p><strong>Prameny práva <\/strong>= formy, ve kterých je právo obsaženo<\/p><div class=\"li l1\">Normativní právní akt - soubor norem vydané orgánem veřejné moci - vláda, poslanci, senát, kraj - vznikají legislativním procesem - postup vytváření, projednávání a schvalování zákonů<\/div><div class=\"li l1\">Normativní smlouva - hlavní pramen mezinárodního práva, jedná se o smlouvu, která obsahuje zavazné pravidla chování<\/div><div class=\"li l1\">Obecné právní zásady - zákony se mají dodržovat , neznalost neomlouvá<\/div><div class=\"li l1\">Precedenty - právní rozhodnutí, který se používají jako příklad pro další podobné případy<\/div><div class=\"li l1\">Právní obyčeje - nepsané pravidlo, které vzniklou postupem času a je veřejností uznávané<\/div><p><strong>Prameny práva v ČR <\/strong>= Normativní právní akt + normativní smlouvy<\/p><p><strong>Ústavní pořádek v ČR <\/strong>= soubor nejdůležitějších pravidel státu<\/p><div class=\"li l1\">Ústava ČR: 8 hlav, 113 článků, 1 preambule<\/div><div class=\"li l2\">preambule = úvod ústavy<\/div><div class=\"li l2\">mezi hlavy patří např. Moc zákonodárná, Moc výkonná, Moc soudní, ČNB<\/div><div class=\"li l1\">Listina základních práv a svobod<\/div><div class=\"li l2\">stanovuje základní práva občanů<\/div><div class=\"li l2\">Např. základní práva a svobody(právo na život), politická práva(svoboda projevu), hospodářská, sociální a kulturní práva<\/div><p><strong>Legislativní proces ČR <\/strong>= proces tvorby práva<\/p><div class=\"li l1\">Návrh zákona - může podat vláda, poslanec, senát nebo krajské zastupitelstvo<\/div><div class=\"li l1\">Poslanecké sněmovně - návrh projde 3. čteními, kde se diskutuje o jeho přijetí<\/div><div class=\"li l1\">Senát - může ho schválit, zamítnout nebo vrátit s pozměnovacími návrhy<\/div><div class=\"li l1\">Prezident - po schválení obou komor je návrh předložen prezidentovi, který ho schválí nebo vetuje a vrátí zpět<\/div><div class=\"li l1\">Vyhlášení zákona<\/div>"},{"id":3,"title":"Prameny práva EU, orgány EU","html":"<h4>Prameny práva EU<\/h4><div class=\"li l1\">Primární - společenské smlouvy, například smlouvy zakládající EU<\/div><div class=\"li l2\">Pařížská smlouva - založení EU Společenství uhlí a oceli<\/div><div class=\"li l2\">Římské smlouvy - Euratom a Evropské hospodářské společenství<\/div><div class=\"li l2\">Bruselská smlouva - slučovací<\/div><div class=\"li l2\">Maastrichtská smlouva - nejdůležitější dokument EU, oficiálně založila EU a přinesla pilířový systém<\/div><div class=\"li l1\">Sekundární - konkrétní nařízení, směrnice, rozhodnutí, která se musí dodržovat<\/div><h4>Orgány EU<\/h4><div class=\"li l1\">Evropský parlament - 705 poslanců volených jednou za 5 let, rozhoduje o právních předpisech a rozpočtu EU spolu s Radou EU<\/div><div class=\"li l1\">Rada EU - zastupuje členské státy, každý stát je zastoupen ministrem odpovědného za danou oblast<\/div><div class=\"li l1\">Evropská komise - Výkonný orgán EU, zastupuje zájmy celé EU. Každý stát má jednoho komisaře<\/div><div class=\"li l1\">Evropská rada - definuje politický směr EU<\/div><div class=\"li l1\">Evropská Centrální Banka, soudní dvůr, účetní dvůr<\/div>"},{"id":4,"title":"Osoby v právní smyslu - dělení, právní osobnost, svéprávnost(přiznání, omezení), delikt způsobilosti","html":"<h4>Osoby v právní smyslu<\/h4><div class=\"li l1\">Fyzické osoby = lidé, občané (mají práva a povinnosti)<\/div><div class=\"li l1\">Právnické osoby = jedná se o uměle vytvořené subjekty. Právnické osoby mohou být například obchodní společnosti, spolky či nadace<\/div><p><strong>Právní osobnost <\/strong>- schopnost mít práva a povinnosti, být účastníkem právních poměrů<\/p><div class=\"li l1\">u FO - Vznik narozením a zánik smrtí<\/div><div class=\"li l1\">u PO - vznik zapsáním do obchodního rejstříku, zánik smazánim z rejstřiku<\/div><p><strong>Svéprávnost <\/strong>= pouze u Fyzické osoby, člověk může za sebe sám právně jednat, Právnická osoba ji nemá, musí být zastoupena FO (neboli statutární orgán)<\/p><div class=\"li l1\">přiznání - zletilostí (18+), uzavřením manželství od 16 let nebo lze nabít svéprávnosti se souhlasem zákonného zástupce<\/div><div class=\"li l1\">omezení - soud stanoví opatrovníka, když osoba není schopna se sama o sebe postarat (Duševně nemocný)<\/div><p><strong>Deliktní způsobilost <\/strong>- způsobilost k protiprávnímu jednání, způsobilost nést odpovědnost za své chování, FO od 15 let v ČR<\/p>"},{"id":5,"title":"Právnická osoba - pojem, druhy, orgány, jednání. Korporace (spolek), fundace, ústav","html":"<p>= uměle vytvořené subjekty, nabývají práv a povinností, ale nemají svéprávnost Znaky = název, sídlo, předmět činnosti<\/p><h4>Orgány<\/h4><div class=\"li l1\">Dělení podle počtu členů<\/div><div class=\"li l2\">individuální<\/div><div class=\"li l2\">kolektivní<\/div><div class=\"li l1\">Dělení podle činnosti<\/div><div class=\"li l2\">Nejvyšší<\/div><div class=\"li l2\">Statutární - jedná za právnickou osobu ve všech záležitostech<\/div><div class=\"li l2\">Kontrolní<\/div><p>Druhy:<\/p><h4>Osobní substrát<\/h4><div class=\"li l1\">Korporace - seskupení osob, které mají společný cíl<\/div><div class=\"li l1\">Spolek - min. 3 osoby se společným zájmem, účel založení jakýkoliv s výjimkou podnikání, ne za účelem zisku, členové neručí za dluhy<\/div><h4>Majetkový substrát<\/h4><div class=\"li l1\">Fundace - často označována jako nadace<\/div><div class=\"li l2\">nadace, která má za úkol spravovat majetek za nějakým účelem, obvykle veřejně prospěšným<\/div><div class=\"li l2\">nemá členy, ale zakladatele a správce, kteří spravují majetek<\/div><div class=\"li l2\">často zakládány pro charitativní, kulturní či vzdělávací účely<\/div><h4>Osobní a majetkový substrát<\/h4><div class=\"li l1\">Ústav<\/div><div class=\"li l2\">provozování užitečné činnosti hospodářsky nebo společensky<\/div><div class=\"li l2\">může provozovat i podnikatelskou činnost<\/div><div class=\"li l2\">nemá členy, ale spravuje ho správní rada<\/div><div class=\"li l2\">veškerý zisk musí být použit na jeho hlavní účel<\/div><div class=\"li l2\">více zaměřená na poskytování sociálních, vzdělávacích nebo zdravotnických služeb<\/div>"},{"id":6,"title":"Podnikatel, podnikání, spotřebitel. Obchodní firma a sídlo podnikatele. Obchodní závod","html":"<p>Podnikatel<\/p><div class=\"li l1\">osoba která vykonává samostatně na vlastní odpovědnost výdělečnou činnost živnostenským či neživnostenským oprávněním<\/div><div class=\"li l1\">zapsána do obchodního rejstříku<\/div><div class=\"li l1\">FO se zapisují do obchodního rejstříku jestliže jejich výnosy za poslední dvě účetní období dosáhly min. 120 milionů kč<\/div><p><strong>Podnikání <\/strong>= výdělečná činnost, vykonávaná podnikatelem samostatně na vlastní účet a odpovědnost , se záměrem činit ji soustavně a za účelem dosažení zisku<\/p><p><strong>Spotřebitel <\/strong>= FO, která uzavírá smlouvy nebo nakupuje zboží/služby pro svou osobní potřebu, nikoli pro podnikatelské účely.<\/p><p><strong>Obchodní firma <\/strong>= jméno, pod kterým je podnikatel zapsán v OB a pod kterým podniká<\/p><p><strong>Sídlo podnikatele <\/strong>= adresa zapsaná v obchodním rejstříku<\/p><p><strong>Obchodní závod <\/strong>(podnik) = organizovaný soubor jmění, které podnikatel vytvořil a slouží k provádění jeho činnosti<\/p>"},{"id":7,"title":"Živnostenské a neživnostenské podnikání","html":"<p><strong>Živnost <\/strong>= soustavná výdělečná činnost, kterou člověk dělá samostatně, vlastním jménem, na vlastní odpovědnost, za účelem zisku a za podmínek stanovené živnostenském zákoně<\/p><p>Podmínky provádění živnosti: plná svéprávnost, bezúhonnost(čistý trestní rejstřík)<\/p><h4>Dělení živností<\/h4><div class=\"li l1\">Ohlašovací<\/div><div class=\"li l2\">řemeslné - nutná odborná způsobilost - kadeřnictví, pekařství…<\/div><div class=\"li l2\">vázané - odborná způsobilost - autoškola, účetnictví…<\/div><div class=\"li l2\">volné - žádná způsobilost - modeling<\/div><div class=\"li l1\">Koncesované<\/div><div class=\"li l2\">pouze na základě státního povolení koncese<\/div><div class=\"li l2\">jedná se například o prodej zbraní, prodej alkoholu<\/div><p><strong>Neživnostenské podnikání <\/strong>= činnost, která nepodléhá živnostenskému zákonu<\/p><div class=\"li l1\">Nepodnikatelská činnosti<\/div><div class=\"li l2\">pronájem nemovitosti<\/div><div class=\"li l2\">sexuální služby<\/div><div class=\"li l2\">služby přírodních léčitelů<\/div><div class=\"li l1\">Podnikatelské činnosti - musí mít podnikatelské oprávnění<\/div><div class=\"li l2\">FO - svobodná povolání - lékaři, advokáti, právníci<\/div><div class=\"li l2\">PO - činnost bank, výroba elektřiny, televizní vysílání, zemědělství<\/div>"},{"id":8,"title":"Obchodní korporace. Aplikace občanského zákoníku a zákona o obchodních korporacích na obchodní korporace. Podíl, vklad, základní kapitál","html":"<p><strong>Obchodní korporace <\/strong>= PO složená ze společenství lidí, za účelem zisku<\/p><h4>Dělení:<\/h4><div class=\"li l1\">obchodní společnosti<\/div><div class=\"li l2\">kapitálové - sro, as<\/div><div class=\"li l2\">osobní - vos, ks<\/div><div class=\"li l2\">nadnárodní - EHZS (Evropské Hospodářské Zájmové Sdružení), Evropská společnost<\/div><div class=\"li l1\">družstva - bytové, sociální<\/div><h4>Kapitálové společnosti<\/h4><div class=\"li l1\">společníci ručí pouze do výše nesplacených vkladů a po splacení vůbec<\/div><div class=\"li l1\">nemusí se na činnosti podílet<\/div><div class=\"li l1\">lze převést svůj podíl na jiného společníka<\/div><div class=\"li l1\">tvoří povinně základní kapitál<\/div><div class=\"li l1\">sro, as<\/div><h4>Osobní společnosti<\/h4><div class=\"li l1\">společníci ručí za dluhy společnosti v plném rozsahu - neomezeně<\/div><div class=\"li l1\">výjimkou jsou komandisté (postavení jako u kapitálové společnosti)<\/div><div class=\"li l1\">povinnost účasti na činnosti společnosti<\/div><div class=\"li l1\">nelze převádět svůj podíl<\/div><div class=\"li l1\">netvoří povinně základní kapitál<\/div><div class=\"li l1\">vos, ks<\/div><p><strong>Družstvo <\/strong>= specifická forma obchodní korporace, variabilní základní kapitál<\/p><p>Vztah ZOK a NOZ - zákon obchodních korporací(ZOK) je ve vztahu k občanskému zákoníku (NOZ) zvláštním zákonem. To znamená, že NOZ se použije tam, kde nelze otázku řešit podle ZOK<\/p><p>ZOK - předpis, který upravuje vznik, fungování a zánik obchodních společností a družstev<\/p><p><strong>Základní kapitál <\/strong>= souhrn všech vkladů<\/p><p><strong>Vklad do ZK <\/strong>= společníci vkladem určují svou účast v obchodní korporaci, vklad může být peněžní či nepeněžní (nemovitost, auto, patent), vkladové ážio(hodnota předmětu je větší než vklad - to co přebývá = ážio), před vznikem OK musí být splaceno 30% peněžitého vkladu<\/p><p><strong>Podíl <\/strong>= účast daného společníka v obchodní korporaci a jeho práva a povinnosti<\/p>"},{"id":9,"title":"Založení, vznik, zrušení, zánik Obchodní korporace. Neplatnost OK","html":"<p><strong>Založení <\/strong>- proces inkorporace<\/p><div class=\"li l1\">zakladatelské právní jednání (společenská a zakladatelská smlouva, z. listina)<\/div><div class=\"li l1\">podnikatelské oprávnění<\/div><div class=\"li l1\">splacení peněžitého vkladu<\/div><div class=\"li l1\">podání návrhu na zápis do OR<\/div><p><strong>Vznik <\/strong>= zapsáním do obchodního rejstříku<\/p><h4>Zrušení<\/h4><div class=\"li l1\">S likvidací<\/div><div class=\"li l2\">Dobrovolná likvidace - po uplynutí doby, rozhodnutí společníků či valné hromady, dosažení cíle<\/div><div class=\"li l2\">Nedobrovolná likvidace - rozhodnutím soudu (např. kvůli nezákonné činnosti)<\/div><div class=\"li l1\">Bez likvidace<\/div><div class=\"li l2\">přeměna OK<\/div><p><strong>Neplatnost OK <\/strong>- ZK nebyl splacen, společenská smlouva má špatnou formu, nezpůsobilost<\/p>"},{"id":10,"title":"Veřejná obchodní společnost, komanditní společnost","html":"<h4>Veřejná obchodní společnost<\/h4><div class=\"li l1\">alespoň dvě osoby (FO, PO)<\/div><div class=\"li l1\">ručí za její dluhy společně a nerozdílně<\/div><div class=\"li l1\">netvoří povinně ZK<\/div><div class=\"li l1\">předmět činnosti za účelem podnikání nebo správa majetku<\/div><p><strong>Založení <\/strong>- společenská smlouva(obsahuje název, sídlo, činnost, statutární orgán, společníky)<\/p><p>Vznik = zápisem do OR<\/p><p><strong>Statutární orgán <\/strong>- tvoří všichni společníci Povinnosti - společníci nemají vkladové povinnosti<\/p><p><strong>Podíly <\/strong>- stejné pokud není uvedeno jinak, nelze je převádět <strong>Zisk a ztráta <\/strong>- rozděluje se rovným dílem mezi společníky Zrušení - s likvidací nebo bez<\/p><p>Zánik - výmaz z OR<\/p><h4>Komanditní společnost<\/h4><div class=\"li l1\">min. 2 osoby<\/div><div class=\"li l1\">alespoň jeden komandista<\/div><div class=\"li l2\">ručí za dluhy omezeně, společně a nerozdílně do výše nesplacených vkladů<\/div><div class=\"li l1\">alespoň jeden komplementář<\/div><div class=\"li l2\">ručí za dluhy neomezeně celým svým majetkem<\/div><div class=\"li l1\">předmět činnosti za účelem podnikání nebo správa majetku<\/div><p><strong>Založení <\/strong>- společenskou smlouvou (rozdělení společníků, výše vkladů) Vznik - zápis do OR<\/p><p><strong>Statutární orgán <\/strong>- tvoří pouze komplementáři, komanditisté nejsou<\/p><h4>Povinnosti:<\/h4><div class=\"li l1\">komplementář - řízení společnosti<\/div><div class=\"li l1\">komanditisté - vkladová povinnost min. 1 Kč<\/div><p><strong>Zisk <\/strong>- komplementáři podle dohody, komanditisté podle výše vkladu<\/p><p><strong>Ztráta <\/strong>- nesou ji komplementáři<\/p><p>Zrušení - s likvidací nebo bez Zánik - výmaz z OR<\/p>"},{"id":11,"title":"Společnost s ručením omezeným","html":"<h4>S.R.O.<\/h4><div class=\"li l1\">min. 1 společník FO/PO<\/div><div class=\"li l1\">společníci dluží za dluhy společně a nerozdílně do výše nesplacených vkladů<\/div><div class=\"li l1\">povinný vklad min. 1 Kč<\/div><div class=\"li l1\">předmět činnosti - jakákoliv zákonem dovolená<\/div><h4>Založení<\/h4><div class=\"li l1\">společenská smlouva - když zakládá více společníků<\/div><div class=\"li l1\">zakladatelská listina - když společnost zakládá jeden Vznik - zapsáním do OR<\/div><p>Povinnosti společníků<\/p><div class=\"li l1\">vkladová povinnost - do 5 let, jinak úrok z prodlení<\/div><div class=\"li l1\">příplatková povinnost - přispět do vlastního kapitálu, určuje společenská smlouva<\/div><div class=\"li l1\">ručební povinnost - společníci ručí solidárně ale omezeně<\/div><div class=\"li l1\">zákaz konkurence<\/div><p><strong>Kmenový list <\/strong>- druh cenného papíru, který představuje podíl společníka ve společnosti<\/p><div class=\"li l1\">nelze jej veřejně obchodovat ani vydat jako zaknihovaný cenný papír<\/div><div class=\"li l1\">umožňuje snazší přenos podílu ve společnosti na někoho jiného<\/div><p><strong>Podíl <\/strong>- určuje se podle poměru jeho vkladu k výši celkového základního kapitálu Buď vlastníš pouze podíl a nebo podíl reprezentovaný kmenovým listem <strong>Orgány společnosti<\/strong><\/p><div class=\"li l1\">Valná hromada - nejvyšší orgán společnosti, provádí usnesení, určuje zvýšení či snížení ZK, je svolávána minimálně jednou za účetní období jednatelem<\/div><div class=\"li l1\">Jednatel - statutární orgán společnosti, řídí společnost a jedná jménem společnosti<\/div><div class=\"li l1\">Dozorčí rada - kontrolní orgán, dohlíží na správný chod společnosti<\/div><p>Zrušení<\/p><div class=\"li l1\">s likvidací - společníci se dohodnou, společník se domáhá u soudu<\/div><div class=\"li l1\">bez likvidace - přeměna<\/div><h4>Přeměna<\/h4><div class=\"li l1\">Fúze - sloučení/splynutí s s.r.o nebo a.s.<\/div><div class=\"li l1\">Převod jmění na společníka - když jeho podíl představuje 90% kapitálu<\/div><div class=\"li l1\">Změna právní normy - na v.o.s., k.s., a.s. nebo družstvo<\/div>"},{"id":12,"title":"Akciová společnost","html":"<h4>Akciová společnost<\/h4><div class=\"li l1\">její kapitál je rozdělen na určitý počet akcií<\/div><div class=\"li l1\">min. 1 zakladatel (FO/PO)<\/div><div class=\"li l1\">základní kapitál min. 2 miliony Kč<\/div><p><strong>Akcie <\/strong>= CP, který představuje podíl na ZK společnosti a s tím spojená práva, jako je podíl na zisku (dividenda) nebo hlasovací právo<\/p><h4>Založení<\/h4><div class=\"li l1\">přijetí stanov(dokumenty) formou veřejné listiny<\/div><div class=\"li l1\">splacení min. 30% vkladu a emisního ážia Založení - zápis do OR<\/div><h4>Orgány<\/h4><div class=\"li l1\">Dualistický systém<\/div><div class=\"li l2\">valná hromada - nejvyšší orgán, všichni akcionáři<\/div><div class=\"li l2\">představenstvo - statutární orgán - 3 členové, vedou a zastupujou s.<\/div><div class=\"li l2\">dozorčí rada - kontrolní orgán<\/div><div class=\"li l1\">Monistický systém<\/div><div class=\"li l2\">valná hromada - nejvyšší orgán<\/div><div class=\"li l2\">statutární ředitel - statutární orgán, volí ho správní rada<\/div><div class=\"li l2\">správní rada - kontrolní orgán, 3 členové<\/div><h4>Povinnosti<\/h4><div class=\"li l1\">vkladová povinnost - částka za kterou vydává společnost akcie<\/div><div class=\"li l1\">povinnost loajality - chovat se čestně a zachovat řád ve společnosti<\/div><h4>Práva<\/h4><div class=\"li l1\">podíl na zisku<\/div><div class=\"li l1\">odkoupení akcií<\/div><div class=\"li l1\">podílet se na řízení společnosti<\/div><p>Zrušení<\/p><div class=\"li l1\">společníci se dohodnou na zrušení<\/div><div class=\"li l1\">společník se domáhá u soudu Zánik - vymazání z OR<\/div>"},{"id":13,"title":"Orgány OK. Péče řádného hospodáře. Smlouva o výkonu funkce","html":"<p>Orgány obchodní korporace<\/p><div class=\"li l1\">kolektivní - více členů<\/div><div class=\"li l1\">individuální - jeden člen<\/div><div class=\"li l1\">volené orgány - obsazenstvo voleno nejvyšším orgánem<\/div><p>Orgány jednotlivých společností<\/p><div class=\"li l1\">vos<\/div><div class=\"li l1\">ks<\/div><div class=\"li l1\">sro<\/div><div class=\"li l1\">as<\/div><div class=\"li l1\">nejvyšší - všichni společníci<\/div><div class=\"li l1\">statutární - každý společník<\/div><div class=\"li l1\">nejvyšší - všichni společníci<\/div><div class=\"li l1\">statutární - komplementáři<\/div><div class=\"li l1\">nejvyšší - valná hromada<\/div><div class=\"li l1\">statutární - jednatel<\/div><div class=\"li l1\">dualistická struktura<\/div><div class=\"li l1\">nejvyšší - valná hromada<\/div><div class=\"li l1\">statutární - představenstvo<\/div><div class=\"li l1\">kontrolní - dozorčí rada<\/div><div class=\"li l1\">monistická struktura<\/div><div class=\"li l1\">nejvyšší - valná hromada<\/div><div class=\"li l1\">statutární - statutární ředitel<\/div><div class=\"li l1\">kontrolní - správní rada<\/div><p>Nejvyšší orgán - jmenuje a odvolává statutární orgány, rozhoduje o ZK a smlouvách Statutární orgán - osoby které jednají jménem společnosti, vedou firmu<\/p><p>Kontrolní orgán - dohlíží na činnost společnosti<\/p><p>Péče řádného hospodáře = jednání při výkonu funkce s loajalitou, s potřebnými znalostmi a pečlivostí<\/p><p>Smlouva o výkonu funkce = dohoda mezi společností a členem jejího orgánu, která určuje jeho povinnosti, práva a odměnu za vykonávanou funkci.<\/p>"},{"id":14,"title":"Zrušení OK bez likvidace(přeměny) a s likvidací","html":"<p><strong>Bez likvidace <\/strong>- přeměny<\/p><div class=\"li l1\">Fúze<\/div><div class=\"li l2\">převod činnosti majitele<\/div><div class=\"li l2\">sloučení - A + B = B, jedna z osob zaniká<\/div><div class=\"li l2\">splynutí - A + B = C, vzniká nová PO<\/div><div class=\"li l1\">Rozdělení<\/div><div class=\"li l2\">rozštěpení - společnost zaniká a její majetek přechází na 2 a více nových PO<\/div><div class=\"li l2\">odštěpení - společnost nezaniká a část jejího majetku přechází na 1 nebo více nových PO<\/div><div class=\"li l1\">Převod jmění na společníka<\/div><div class=\"li l2\">jedna společnost zaniká a její jmění přechází na jinou osobu (nástupce)<\/div><div class=\"li l1\">Změna právní formy<\/div><div class=\"li l2\">korporace nezaniká, např. změna z vos na as<\/div><div class=\"li l1\">Přesun sídla<\/div><p><strong>S likvidací <\/strong>- korporace zaniká<\/p><div class=\"li l1\">dobrovolná<\/div><div class=\"li l2\">rozhodnutí společníků<\/div><div class=\"li l2\">uplynutím doby<\/div><div class=\"li l2\">splnění svého účelu<\/div><div class=\"li l1\">nedobrovolná<\/div><div class=\"li l2\">rozhodne soud<\/div>"},{"id":15,"title":"Veřejné rejstříky a seznamy - právní účinky zápisu. Obchodní rejstřík a sbírka listin. Katastr nemovitostí","html":"<p><strong>Veřejné rejstřík <\/strong>= informační systém veřejné správy, kam se zapisují údaje o osobách (všechny PO a některé FO)<\/p><p>Veřejné rejstříky - 6 taxativně vymezených rejstříku<\/p><div class=\"li l1\">Obchodní rejstřík<\/div><div class=\"li l1\">Nadační rejstřík<\/div><div class=\"li l1\">Spolkový rejstřík<\/div><div class=\"li l1\">Rejstřík ústavů<\/div><div class=\"li l1\">Rejstřík společenství vlastníků jednotek<\/div><div class=\"li l1\">Rejstřík obecně prospěšných společností<\/div><h4>Právní účinky zápisu<\/h4><div class=\"li l1\">Konstitutivní zápis - má za následek vznik, změnu, zánik právního vztahu - bez zápisu neplatí (např. vznik obchodní společnosti)<\/div><div class=\"li l1\">Deklaratorní zápis - právní účinky vznikají již před zapsáním do VR , zápis o nich pouze informuje (např. změna člena orgánu)<\/div><h4>Obchodní rejstřík<\/h4><div class=\"li l1\">rejstřík do kterého se zapisují zákonem stanovené údaje týkající se podnikatelů<\/div><div class=\"li l1\">vedou ho krajské soudy, v Praze městské soudy<\/div><div class=\"li l1\">každý do něj může nahlížet<\/div><div class=\"li l1\">obsah zápisu: název, sídlo, předmět činnosti, právní forma, orgán, výše ZK<\/div><p><strong>Sbírka listin <\/strong>= součást veřejného rejstříku, kde jsou uložené důležité dokumenty společnosti (např. zakladatelské dokumenty a smlouvy)<\/p><p><strong>Katastr nemovitost<\/strong>í - veřejný informační systém, kde jsou evidovány všechny nemovitosti v ČR. Katastr obsahuje informace o vlastnících, polohách a právních vztazích k dané nemovitosti. Slouží k ochraně práv k nemovitostem a životního prostředí.<\/p>"},{"id":16,"title":"Věci v právním smyslu - pojem a jejich rozdělení. Součást věci a příslušenství k věci","html":"<p>Věc = vše co je rozdílné od osoby a slouží k uspokojení lidských potřeb - automobil, nemovitost, cenný papír, kytara<\/p><p>Dělení věcí<\/p><div class=\"li l1\">Věci movité a nemovité<\/div><div class=\"li l2\">nemovite - pozemky a nemovitosti<\/div><div class=\"li l2\">movité - vše ostatní<\/div><div class=\"li l1\">Věci hmotné a nehmotné<\/div><div class=\"li l2\">hmotná věc - má fyzickou podstatu, lze ji uchopit<\/div><div class=\"li l2\">nehmotné - práva<\/div><div class=\"li l1\">Věci dělitelné a nedělitelné<\/div><div class=\"li l2\">dělitelné - dají se rozdělit(peníze)<\/div><div class=\"li l2\">nedělitelné - nelze je rozdělit(auto, nábytek)<\/div><div class=\"li l1\">Věci zastupitelné a nezastupitelné<\/div><div class=\"li l2\">zastupitelné - lze je nahradit jinou věcí(peníze, potraviny)<\/div><div class=\"li l2\">nezastupitelné - nelze je nahradit(archeologické nálezy)<\/div><div class=\"li l1\">Věci zužitelné a nezuživatelné<\/div><div class=\"li l2\">zužitelné - věc, kterou když využíváme k jejím účelu se zničí (potraviny)<\/div><div class=\"li l2\">nezuživatelné - ostatní<\/div><p>Součást věci = vše co k ní podle její povahy patří a co nemůže být od věci odděleno jinak se tím věc znehodnotí (např. motor auta - součást auta, která když bude vyjmuta znehodnotí se a nebude fungovat)<\/p><p>Příslušenství věci = vedlejší věc vlastníka k věci hlavní, účelem je, aby se vedlejší věc trvala využívala s hlavní věcí (např. skříň a klíč)<\/p>"},{"id":17,"title":"Cenné papíry - pojem, forma, druhy, vydávání. Akcie, kmenový list","html":"<p>Cenný papír = listina, jejímž prostřednictvím majitelé nabývají určitý nárok Dělení CP:<\/p><div class=\"li l1\">Podle podoby<\/div><div class=\"li l2\">Listinný cenný papír - fyzická listina<\/div><div class=\"li l2\">Zaknihovaný CP - záznam v elektronické evidenci, neexistuje fyzicky<\/div><div class=\"li l2\">Imobilizovaný CP - uložen v hromadné úschově<\/div><div class=\"li l1\">Podle formy<\/div><div class=\"li l2\">Na řad - mohou být převedena na základě rubopisu<\/div><div class=\"li l2\">Na doručovatele - neomezeně převoditelné, kdo má papír, tak vlastni CP<\/div><div class=\"li l1\">Podle druhu<\/div><div class=\"li l2\">Kmenová akcie - nejběžnější, s právem na podíl na zisku<\/div><div class=\"li l2\">Prioritní akcie - akcie s prioritou při zisku<\/div><div class=\"li l2\">Dluhopis<\/div><p>Podílové listy = cenný papír o vlastnictví nebo spoluvlastnictví<\/p><p>Dluhopisy = cenný papír se kterým je spojeno právo na splacení určitého dluhu i s úroky<\/p><p>Akcie = CP, který představuje podíl na ZK společnosti a s tím spojená práva, jako je podíl na zisku (dividenda) nebo hlasovací právo<\/p><p>Kmenový list - druh cenného papíru, který představuje podíl společníka ve společnosti<\/p><div class=\"li l1\">nelze jej veřejně obchodovat ani vydat jako zaknihovaný cenný papír<\/div><div class=\"li l1\">umožňuje snazší přenos podílu ve společnosti na někoho jiného<\/div>"},{"id":18,"title":"Práva k duševního vlastnictví. Autorská práva a práva průmyslového vlastnictví - přehled předmětů ochrany","html":"<p>Právo duševního vlastnictví = soubor práv, které chrání nehmotné výrobky lidské činnosti (umělecká díla, vynálezy)<\/p><p>Systém práva duševního vlastnictví<\/p><div class=\"li l1\">Autorská práva<\/div><div class=\"li l2\">práva autora k autorským dílům<\/div><div class=\"li l2\">dílo = jedinečný výsledek tvůrčí činnosti<\/div><div class=\"li l2\">např. umění a databáze<\/div><div class=\"li l2\">Osobnostní práva<\/div><div class=\"li l3\">jsou spojena s autorem a chrání jeho osobní vztah k dílu<\/div><div class=\"li l3\">např. právo být uveden jako autor a chrání dílo před zkreslením<\/div><div class=\"li l3\">zaniká autorovou smrtí<\/div><div class=\"li l2\">Majetková práva<\/div><div class=\"li l3\">umožňují autorovi využívat dílo ekonomicky<\/div><div class=\"li l3\">např. k rozmnožování a šíření<\/div><div class=\"li l3\">zanikají po určité době - v ČR 70 let po smrti autora<\/div><div class=\"li l1\">Průmyslové právo<\/div><div class=\"li l2\">výsledek tvůrčí činnosti - vynálezy, ochranné známky, zlepšováky<\/div><div class=\"li l2\">Výsledky tvůrčí činnosti<\/div><div class=\"li l3\">vynálezy - patenty<\/div><div class=\"li l2\">Hospodářská ochranná značení<\/div><div class=\"li l3\">ochranné známky - chrání název, logo firmy<\/div><div class=\"li l3\">označení původu<\/div><div class=\"li l3\">zeměpisné označení<\/div>"},{"id":19,"title":"Věcná práva k věci vlastní - vlastnictví (vznik, obsah, ochrana, omezení), spoluvlastnictví, společné jmění manželů, držba","html":"<p>Věcné právo = soubor práv, která upravují vztah osoby k věci Věcná práva k věcem vlastním = vlastnictví, držba, spoluvlastnictví<\/p><p>Vlastnické právo = oprávnění vlastníka věc držet, užívat, požívat její plody a nakládat s ní<\/p><p>Vznik - nabytí vlastnického práva<\/p><div class=\"li l1\">originární(původní) - věc neměl vlastníka<\/div><div class=\"li l2\">vyrobením<\/div><div class=\"li l2\">vydržením<\/div><div class=\"li l2\">zpracováním<\/div><div class=\"li l1\">Derivativní(odvozné)<\/div><div class=\"li l2\">převod - projev vůle<\/div><div class=\"li l2\">přechod - dědictví<\/div><p>Obsah = jednotlivá oprávnění a povinnosti vlastníka Ochrana = soudem, orgánem státní správy Omezení - zákonem<\/p><div class=\"li l1\">úprava sousedských práv - např. zákaz obtěžování sousedů hlukem<\/div><div class=\"li l1\">možnost použít věc bez vlastníka svolení - pouze při stavu nouze<\/div><div class=\"li l1\">vyvlastněním - změna vlastnického práva<\/div><p>Spoluvlastnictví - právní vztah, kdy více osob vlastní jednu věc společně, míru práv a povinností určuje podíl<\/p><p>Společné jmění manželů - podíl se určuje až po zániku manželství, nikoliv v době jeho trvání<\/p><p>Držba - stav kdy osoba využívá věc jako by ji patřila, i když není jejím vlastníkem. Typickým příkladem je pronájem bytu, nájemník podle smlouvy má držbu práva bydlet<\/p>"},{"id":20,"title":"Věcná práva k věci cizí - právo stavby, věcná břemena, právo zástavní, zadržovací. Správa cizího majetku","html":"<p>Věcné právo = soubor práv, která upravují vztah osoby k věci<\/p><p>Věcná práva k věcem cizím = Právo stavby, věcná břemena, právo zástavní a zadržovací, správa cizího majetku<\/p><p>Právo stavby - umožňuje stavebníkovy na cizím pozemku postavit svou stavbu<\/p><p>Věcná břemena - omezení vlastníka ve prospěch někoho jiného, vlastník je povinen něco strpět<\/p><div class=\"li l1\">Služebnosti - vlastník věci je povinen něco strpět nebo se něčeho zdržet<\/div><div class=\"li l2\">například musí strpět, že jeho soused jezdí přes jeho pozemek, protože to je jediná přístupová cesta k jeho nemovitosti<\/div><div class=\"li l1\">Reálná břemena - vlastník věci má povinnost něco dát nebo konat<\/div><div class=\"li l2\">například vlastník pozemku má povinnost dodávat vodu ze své studny sousedovi, protože soused studnu nemá<\/div><p>Právo zástavní - slouží k zajištění dluhu pro případ, že jej dlužník nebude splácet včas a řádně. Například banka si kvůli vaší půjčce na nemovitost zřídí zástavní právo k této nemovitosti a v případě nesplácení dluhů jej může zpeněžit<\/p><p>Právo zadržovací - oprávnění věřitele zadržet cizí movitou věc, kterou má věřitel oprávněně u sebe dokud dlužník nesplní svůj dluh. Například automechanik má právo zadržet dlužníkovo auto dokud mu nezaplatí za jeho opravu.<\/p><p>Správa cizího majetku - správce je pověřen starat se o majetek který nevlastní, má povinnost jednat čestně a pečlivě. Například kamarád ti nechá svého psa protože odjíždí na víkend a ty máš povinnost se o něj starat i když ho nevlastníš<\/p>"},{"id":21,"title":"Právní jednání (pojem, druhy, náležitosti,výklad. Jednání podnikatele","html":"<p>Právní jednání = chování svéprávné osoby jež je podle zákona způsobilé vyvolat nějaké právní následky<\/p><p>Druhy<\/p><div class=\"li l1\">Podle počtu stran<\/div><div class=\"li l2\">jednostranné - závěť<\/div><div class=\"li l2\">dvoustranné a vícestranné - shoda projevu vůle více subjektů<\/div><div class=\"li l1\">Podle adresování<\/div><div class=\"li l2\">adresovaná - je někomu adresována, např. reklamace<\/div><div class=\"li l2\">neadresovaná - není adresovaná, např. nabídka odměny za nález psa<\/div><div class=\"li l1\">Podle obsahu<\/div><div class=\"li l2\">úplatné - něco za něco, např. kupní smlouva<\/div><div class=\"li l2\">neúplatné - bez nároku na protihodnotu, např. dárek<\/div><p>Náležitosti<\/p><div class=\"li l1\">náležitost subjektu - subjekt musí být svéprávný a způsobilý<\/div><div class=\"li l1\">náležitost vůle - projev je vážný a svobodný<\/div><div class=\"li l1\">náležitost projevu vůle - projev musí být srozumitelný a určitý<\/div><div class=\"li l1\">náležitosti obsahu Jednání podnikatele<\/div><div class=\"li l1\">FO - přímé jednání či nepřímé jednání(někým zastoupen - zákonný zástupce či opatrovník)<\/div><div class=\"li l1\">PO - nemůže přímo jednat, vždy zastoupená statutárním orgánem(FO)<\/div>"},{"id":22,"title":"Vady právních jednání - zdánlivost, neplatnost, relativní neúčinnost","html":"<p>Zdánlivost právního jednání - znamená, že PJ ve skutečnosti vůbec neexistuje, protože mu chybí nějaké podstatné náležitosti. Nelze ho považovat za platné ani neplatné, protože nevzniklo(např. možná ti prodám auto - takové jednání se označuje za zdánlivé)<\/p><p>Neplatnost právního jednání - postrádá podstatné náležitosti<\/p><div class=\"li l1\">Absolutní neplatnost - jednání je neplatné pro všechny<\/div><div class=\"li l1\">Relativní neplatnost - jednání platí, pokud se někdo nedovolá k jeho neplatnosti Relativní neúčinnost - právní jednání platí, ale věřitel může namítnout, že pro něj neplatí<\/div><div class=\"li l1\">příklad - dlužník daruje svůj majetek svému kamarádovi, aby nemusel zaplatit dluh. Věřitel může u soudu odporovat a říct, že darování bylo za účelem, aby dlužník nemusel splácet. Pokud soud to soud uzná, dlužník musí splatit věřiteli celý dluh<\/div>"},{"id":23,"title":"Zastoupení(včetně zastoupení podnikatele) - pojem, druhy, zákonné zastoupení, smluvní zastoupení(plná moc a prokura), opatrovnictví","html":"<p>Zastoupení = jednání za někoho jiného na základě smlouvy nebo zákona, zastupovat jiného nemůže ten, jehož zájmy jsou v rozporu se zájmy zastoupeného<\/p><p>Druhy<\/p><div class=\"li l1\">přímé zastoupení - zástupce jedná na účet a jménem zastoupeného<\/div><div class=\"li l1\">nepřímé zastoupení - zástupce jedná na účet zastoupeného, ale vlastním jménem<\/div><div class=\"li l1\">Smluvní zastoupení - vzniká dohodou<\/div><div class=\"li l2\">plná moc<\/div><div class=\"li l3\">může být udělena kýmkoliv a není zapisována do rejstříku<\/div><div class=\"li l3\">může být omezena na určité úkony<\/div><div class=\"li l3\">slouží k jednorázovému nebo omezenému zastoupení<\/div><div class=\"li l2\">prokura<\/div><div class=\"li l3\">dává prokuristovi právo jednat ve všch záležitostech souvisejících s podnikáním<\/div><div class=\"li l3\">uděluje ji jen podnikatel zapsaný do OR<\/div><div class=\"li l3\">musí být zapsána do OR<\/div><div class=\"li l1\">Zákonné zastoupení - vzniká ze zákona, je povinné (nezletilost)<\/div><div class=\"li l1\">Zastoupení na základě rozhodnutí soudu - opatrovnictví<\/div><div class=\"li l2\">soud určí povinnosti opatrovníka<\/div><div class=\"li l2\">soud jmenuje opatrovníka člověku, je li potřeba k ochraně jeho zájmů (např. nesvéprávnému člověku, třeba duševně nemocnému)<\/div><div class=\"li l2\">lze ustanovit opatrovníka i PO, například v případě nedostatku členů ve statutárním orgánu<\/div>"},{"id":24,"title":"Právní události, lhůty a doby v právu, protiprávní stavy, právní domněnky a fikce","html":"<p>Právní událost = skutečnost, která nastane nezávisle na vůli člověka a vyvolá právní následky (narození, smrt, přírodní katastrofy)<\/p><p>Lhůta = časový úsek stanovený zákonem nebo smlouvou, během které je potřeba něco vykonat<\/p><div class=\"li l1\">příklad - máte 30 dní na zaplacení dluhu, pokud jej nezaplatíte do této lhůty, může vám být účtována pokuta<\/div><p>Doba = časový úsek, jehož trvání je předem určeno a po jeho uplynutí právo zaniká<\/p><div class=\"li l1\">příklad - nájemní smlouva je uzavřena na jeden rok, což znamená, že nájemní vztah trvá po tuto dobu<\/div><p>Dělení lhůty:<\/p><div class=\"li l1\">Prosté lhůty - časový úsek, do kdy musíte něco udělat<\/div><div class=\"li l1\">V případě nečinnosti se hovoří o marném uplynutí lhůty<\/div><div class=\"li l2\">lhůty prekluzivní - časový úsek po kterém právo zaniká<\/div><div class=\"li l2\">lhůta promlčecí - časový úsek po kterém právo nezanikne, ale nelze jej vymáhat soudem<\/div><div class=\"li l1\">Podle okolností rozhodující pro počátek běhu lhůt<\/div><div class=\"li l2\">objektivní lhůty - rozhoduje, kdy se skutečnost stala<\/div><div class=\"li l2\">subjektivní lhůty - rozhoduje, kdy se subjekt o skutečnosti dozvěděl Stavění lhůty - lhůta přestane na nějakou dobu běžet a poté začne tam kde skončila<\/div><p>Přerušení lhůty - lhůta běží znovu<\/p><div class=\"li l1\">příklad - když dlužník uzná, že dluh existuje, promlčecí lhůta se zastaví a začne běžet od začátku<\/div><p>Protiprávní stavy = výsledek nezaviněného chování, které jsou v rozporu s právem, je povinnost takový stav napravit i když jsme ho nezavinili<\/p><p>Právní domněnka = skutečnost, která se považuje za pravdivou dokud není vyvrácena<\/p><div class=\"li l1\">příklad - domněnka otcovství<\/div><p>Právní fikce = právní skutečnost, která ve skutečnosti nenastala<\/p><div class=\"li l1\">prohlášení osoby za mrtvou, třeba když zmizí i když to není jistý<\/div>"},{"id":25,"title":"Relativní majetková práva (závazky). Pohledávka. Dluh. Vznik závazků. Obsah závazků, postup při uzavření smluv. Obsah závazku","html":"<p>Závazek = vztah, který vzniká mezi věřitelem a dlužníkem<\/p><p>Pohledávka = oprávnění věřitele požadovat od dlužníka vyrovnání dluhu, lze ji převést na někoho jiného (postoupení pohledávky) a může být dědičná<\/p><p>Dluh = předmět vztahu mezi věřitelem a dlužníkem, věřitel má oprávnění a dlužník má povinnost zplatit dluh<\/p><p>Vznik závazku<\/p><div class=\"li l1\">smlouvou<\/div><div class=\"li l1\">protiprávní činností<\/div><div class=\"li l1\">určení soudem<\/div><p>Obsah závazku - dluh dlužníka a pohledávka věřitele, práva a povinnosti<\/p><p>Smlouvy = dohoda mezi dvěma nebo více stranama, která zakládá, mění nebo ruší práva a povinnosti<\/p><p>Uzavírání smluv<\/p><div class=\"li l1\">1. nabídka - návrh smlouvy<\/div><div class=\"li l2\">jedna strana vytváří nabídku a druhá ji akceptuje<\/div><div class=\"li l2\">akceptační lhůta - délka lhůty pro přijetí nabídky<\/div><div class=\"li l1\">2. přijetí nabídky a uzavření smlouvy<\/div><div class=\"li l2\">přijetí = vznik smlouvy<\/div>"},{"id":26,"title":"Zvláštní způsoby uzavírání smluv. Zadávání veřejných zakázek. Smlouva o smlouvě budoucí","html":"<p>Zvláštní způsoby uzavírání smluv:<\/p><div class=\"li l1\">veřejná soutěž o nejvhodnější nabídku - výzva k podávání nabídek, nejvhodnější vyhrává<\/div><div class=\"li l1\">veřejná nabídka - navrhovatel podá nabídku neomezenému množství lidí, kdo ji první přijme ten vyhrává (bazar)<\/div><div class=\"li l1\">dražba - uzavření smlouvy s tím kdo dá nejvyšší nabídku<\/div><p>Zadávání veřejných zakázek - proces, kdy zadavatel vyhlašuje soutěž, aby vybral dodavatele pro svůj projekt, nejlepší vyhrává<\/p><p>Smlouva o smlouvě budoucí - uzavření smlouvy ve které se strany dohodnou na uzavření budoucí smlouvy<\/p>"},{"id":27,"title":"Změny závazků","html":"<p>Změna v subjektu<\/p><div class=\"li l1\">postoupení pohledávky - mění se věřitel<\/div><div class=\"li l1\">převzetí dluhu - mění se dlužník<\/div><div class=\"li l1\">postoupení smlouvy - jedna ze stran převede svá práva a povinnosti na někoho jiného<\/div><p>Změna v obsahu - mění se práva a povinnosti stanové původní smlouvou<\/p><div class=\"li l1\">novace - původní závazek se ruší a je vytvořen nový<\/div><div class=\"li l1\">narovnání - závazek se ruší a je vytvořen nový, mění se práva a povinnosti aby se předešlo sporům<\/div>"},{"id":28,"title":"Zajištění dluhu věcně právními zajišťovacími prostředky","html":"<p>= Uspokojení pohledávky jiným způsobem, v případě, že dlužník není schopen splácet včas a řádně<\/p><p>Zástavní právo - uspokojením pohledávky z výtěžku zpeněžení zástavy<\/p><div class=\"li l1\">každá věc se kterou se dá obchodovat<\/div><div class=\"li l1\">věřitel musí o věc pečovat a smí ji užívat pouze se souhlasem dlužníka<\/div><div class=\"li l1\">nemovitost v zástavě pouze při hypotéce<\/div><p>Podzástavní právo - když je předmětem pohledávka ke které bylo ke které bylo zřízeno zástavní právo<\/p><div class=\"li l1\">například - osoba A dluží osobě B a jako zástavu poskytne auto. Osoba B potřebuje peníze a svou pohledávku vůči osobě B zastaví osobě C<\/div><p>Zadržovací právo - právo zadržet movitou věc dlužníka dokud nesplatí svůj dluh<\/p><div class=\"li l1\">příklad - Automechanik opraví auto, ale zákazník nezaplatí. Automechanik má právo auto zadržet dokud dlužník nezaplatí<\/div>"},{"id":29,"title":"Zajištění dluhu obligačními zajišťovacími prostředky. Utvrzení dluhu","html":"<p>= Uspokojení pohledávky jiným způsobem, v případě, že dlužník není schopný splácet dluh včas a řádně<\/p><p>Ručení - prohlášení třetí osoby vůči věřiteli, že dluh splatí, pokud dlužník neplatí dluh<\/p><p>Finanční záruka - závazek třetí osoby, že poskytne věřiteli určitou finanční částku, jestliže dlužník dluh nesplatí<\/p><p>Zajišťovací převod práva - zajištění dluhu, kdy dlužník převede nějakou svou věc na věřitele jako záruku splnění dluhu, jakmile je dluh splněn právo se vrátí zpět dlužníkovi. Je to časově omezené<\/p><p>Dohoda o srážkách ze mzdy a jiných příjmů - pohledávka bude uspokojena srážkami ze mzdy, a to do výše nepřesahující polovinu<\/p><p>Utvrzení dluhu - prostředky, které věřiteli usnadňují vymáhání dluhu<\/p><div class=\"li l1\">smluvní pokuta<\/div><div class=\"li l1\">uznání dluhu<\/div>"},{"id":30,"title":"Zánik závazku splněním. Zánik nesplněného závazku na základě právního jednání a právní události","html":"<p>Zánik závazku - splněním, dohodou, právní událostí(uplynutí doby, smrtí), právní skutečností Zánik závazku splněním - závazek byl splněn řádně a včas<\/p><p>Pozdní plnění - dlužník je v prodlení, věřitel může odstoupit od smlouvy nebo požadovat úroky<\/p><p>Částečné plnění - splnění pouze části závazku, pokud s tím věřitel souhlasí, může být částečné plnění přijato a dluh se tím sníží<\/p><p>Zánik nesplněného závazku na základě právního jednání - zánik nesplněním<\/p><div class=\"li l1\">Odstoupením od smlouvy<\/div><div class=\"li l2\">porušení smluvních povinností dlužníka nebo věřitele<\/div><div class=\"li l2\">prodlení dlužníka nebo věřitele<\/div><div class=\"li l2\">započtení pohledávky - zrušení vzájemných pohledávek<\/div><div class=\"li l3\">příklad - osoba A dluží 100 Kč osobě B a osoba B zase 50 Kč osobě A, po započtení dluží osoba A osobě B 50 Kč<\/div><div class=\"li l1\">Výpověď - jednostranný právní úkon osoby, který vyjadřuje vůli zrušit závazek<\/div><div class=\"li l1\">Dohodou - žádná strana nemá zájem o splnění závazku<\/div><div class=\"li l1\">Prominutí dluhu<\/div><p>Zánik nesplněného závazku na základě právní události<\/p><div class=\"li l1\">uplynutí doby<\/div><div class=\"li l1\">smrt dlužníka nebo věřitele<\/div><div class=\"li l1\">splynutí - dluh a pohledávka splyne v jedné osobě (dědění, při prodeji závodu)<\/div>"},{"id":31,"title":"Kupní smlouva a smlouva o dílo","html":"<p>= smlouvy o převodu vlastnického práva Kupní smlouva<\/p><div class=\"li l1\">mezi prodávajícím a kupujícím<\/div><div class=\"li l1\">náležitosti - určení smluvních stran, předmět koupě, záruka, kupní cena<\/div><div class=\"li l1\">práva a povinnosti<\/div><div class=\"li l2\">předávací musí předat včas a upozornit na vady<\/div><div class=\"li l2\">kupující - včas převzít, zaplatit a prohlédnout<\/div><div class=\"li l1\">koupě nemovité věci<\/div><div class=\"li l2\">převod vlastnických práv k nemovitosti na kupujícího<\/div><div class=\"li l1\">koupě závodu<\/div><div class=\"li l2\">kupující získá celý závod a i práva, závazky a vztahy k němu(smlouvy se zaměstnanci)<\/div><div class=\"li l1\">odpovědnost za vady u kupní smlouvy<\/div><div class=\"li l2\">věc je vadná jestliže neodpovídá smlouvě<\/div><div class=\"li l2\">zákonná - zda zboží má vady v okamžiku, kdy přechází na kupujícího<\/div><div class=\"li l2\">záruční - prodávající nese odpovědnost za vady po dobu trvání záruky<\/div><p>Smlouva o dílo<\/p><div class=\"li l1\">zhotovitel se zavazuje provést určité dílo (např. stavbu) a objednatel se zavazuje dílo převzít a zaplatit<\/div><div class=\"li l1\">zhotovitel - provádí dílo samostatně na svůj náklad a nebezpečí<\/div><div class=\"li l1\">objednatel - právo kontroly, při vadách může odstoupit<\/div>"},{"id":32,"title":"Smlouva příkazního typu","html":"<p>Příkazní smlouva - dohoda, ve které se příkazník zavazuje pro příkazce obstarat určitou záležitost<\/p><div class=\"li l1\">příklad Příkazník se zaváže zastupovat příkazce při jednání s úřady. Příkazce mu zaplatí odměnu za jeho čas a odborné znalosti<\/div><p>Práva a povinnosti<\/p><div class=\"li l1\">příkazník - poctivost a pečlivost<\/div><div class=\"li l1\">příkazce - může příkaz odvolat kdykoliv<\/div><p>Smlouva o zprostředkování - dohoda, kdy někdo pro tebe něco obstará, například najde kupce nebo nájemce<\/p><div class=\"li l1\">příklad - Realitní kancelář uzavře smlouvu o zprostředkování s prodávajícím nemovitosti.<\/div><p>Kancelář najde kupce, nemovitost se prodá a realitní kancelář dostane provizi.<\/p><p>Komisionářská smlouva - dohoda, kde se komisionář zavazuje, že pro komitenta něco zařídí a to svým jménem, ale na účet komitenta, pak to komitentovi předá a dostane odměnu<\/p><div class=\"li l1\">příklad - Komisionář (například prodejce) prodá zboží komitenta (např. obrazy malíře) ve svém obchodě. Zákazník si koupí obraz, ale ve smlouvě o prodeji je uveden prodejce (komisionář), nikoli malíř (komitent). Malíř dostane peníze za obraz, a komisionář za svou práci obdrží odměnu.<\/div><p>Zasílatelská smlouva - zasílatel se zavazuje příkazci, že mu vlastním jménem a na jeho účet přepraví zásilku<\/p><p>Smlouva o obchodním zastoupení - dohoda, kdy se zástupce zavazuje sjednávat obchody nebo uzávírat smlouvy svým jménem na účet zastoupeného<\/p><p>Konkurenční doložka - obchodní zástupce se zavazuje, že max na 2 roky nebude vykonávat činnost, která je předmětem podnikání zastoupeného<\/p>"},{"id":33,"title":"Smlouvy o přenechání věci k užití ji jinému - nájemní smlouva, pacht, výpůjčka, zápůjčka, úvěr, licenční smlouva","html":"<p>Nájemní smlouva - pronajímatel se zavazuje přenechat nájemci věc, aby ji dočasně používal za nájemné na dobu určitou či neurčitou<\/p><p>Nájem prostoru k podnikání - nájemce je povinen v prostoru provozovat činnost, která je ve smlouvě<\/p><p>Pacht - propachtovatel se zavazuje přenechat pachtýři věc k užívání za pachtovné, narozdíl od nájemní smlouvy pachtýř smí z věci brát užitky, například sklízet plodiny (pole)<\/p><p>Výpůjčka - půjčitel přenechá vypůjčiteli věc k dočasnému užívání a zadarmo<\/p><p>Zápůjčka - zapůjčitel přenechá vydlužitely věc k užívání na určité období a vydlužitel se zavazuje vrátit mu věc stejného druhu a množství. Může být úročena i neúročena<\/p><p>Úvěr - věřitel se zavazuje, že poskytne dlužníkovi peníze a dlužník se zavazuje je vrátit i s úvěrem do nějaké určité doby<\/p><p>Licenční smlouva - dohoda, ve které poskytovatel dává oprávnění k jeho duševnímu vlastnictví za podmínek uvedené ve smlouvě, často za odměnu (software)<\/p>"},{"id":34,"title":"Smlouva pracovní a dohody o pracích konaných mimo pracovní poměr","html":"<p>Smlouva pracovní - dohoda mezi zaměstnancem a zaměstnavatelem, zaměstnanec se zavazuje vykonávat nějakou práci a zaměstnavatel se zavazuje, že ho bude platit<\/p><p>Pracovní poměr = výkon závislé práce mezi zaměstnancem a zaměstnavatelem<\/p><p>Závislá práce:<\/p><div class=\"li l1\">vztah nadřízenosti a podřízenosti<\/div><div class=\"li l1\">podle pokynů zaměstnavatele<\/div><div class=\"li l1\">práce je vykonávána pouze zaměstnancem osobně<\/div><div class=\"li l1\">za mzdu<\/div><div class=\"li l1\">jménem zaměstnavatele<\/div><p>Vznik - pracovní smlouvou, která obsahuje:<\/p><div class=\"li l1\">druh práce<\/div><div class=\"li l1\">místo<\/div><div class=\"li l1\">den nástupu<\/div><p>Zkušební doba - 3 až 6 měsíců, ve zkušební době mohou obě strany zrušit smlouvu bez uvedení důvodu<\/p><p>Povinnosti - zaměstnavatel přidělovat práci a zaměstnanec dělat tu práci Dohody o pracích konaných mimo pracovní poměr<\/p><p>Dohoda o provedení práce(DPP)<\/p><div class=\"li l1\">nee víc jak 300 hodin ročně pro jednoho zaměstnavatele<\/div><div class=\"li l1\">míň jak 10 000 měsíčně = žádné odvádění sociálního a zdravotního pojištění<\/div><div class=\"li l1\">musí být uvedena doba na kterou se smlouva uzavírá<\/div><p>Dohoda o pracovní činnosti(DPČ)<\/p><div class=\"li l1\">není možné vykonávat víc jak polovinu běžného pracovního týdne (max 20 h)<\/div><div class=\"li l1\">při příjmu nad 4000 měsíčně se odvádí jak pracovní tak zdravotní pojištění<\/div>"},{"id":35,"title":"Právní odpovědnost - předpoklad vzniku, funkce, druhy právních odpovědností","html":"<p>= nutnost nést následky za své chování (porušení právních povinností nebo způsobení škody), porušila pravidla, tak může být potrestána (pokuta, náhrada, vězení)<\/p><p>Předpoklad vzniku<\/p><div class=\"li l1\">Objektivní<\/div><div class=\"li l2\">jsi zodpovědný i když to přímo nebyla tvoje chyba<\/div><div class=\"li l2\">například - uteče ti pes a někoho kousne, je to tvá chyba, protože je to tvůj pes<\/div><div class=\"li l1\">Subjektivní<\/div><div class=\"li l2\">tvé zavinění, ať už bylo úmyslné či nikoliv<\/div><div class=\"li l2\">například - způsobíš nehodu, protože si jel na červenou<\/div><p>Funkce<\/p><div class=\"li l1\">preventivní - předchází porušení práva (například hrozba pokuty za překročení rychlosti)<\/div><div class=\"li l1\">reparační - nahrazení škody(například si někomu naboural auto, musíš to napravit)<\/div><div class=\"li l1\">represivní - trest za porušení zákona, výchovný aspekt (vězení)<\/div><p>Druhy<\/p><div class=\"li l1\">podle předpokladu vzniku(subjektivní, objektivní)<\/div><div class=\"li l1\">podle toho kdo nese následky(vlastní - ten co to způsobil, cizí - někdo jiný nebo oba)<\/div><div class=\"li l1\">závazkové - za vady a prodlení<\/div><div class=\"li l1\">mimozávazkové - za trestní čin<\/div>"},{"id":36,"title":"Závazky z deliktů(odpovědnost za škodu). Bezdůvodné obohacení","html":"<p>Delikt = protiprávní jednání, ze kterého vzniká povinnost nahradit škodu<\/p><p>Odpovědnostní závazky - právní vztahy, které vznikají v důsledku právních povinností nebo způsobení škody<\/p><p>Dělení<\/p><div class=\"li l1\">podle ohledu na zavinění<\/div><div class=\"li l2\">objektivní<\/div><div class=\"li l2\">subjektivní<\/div><div class=\"li l1\">podle druhu odpovědnosti<\/div><div class=\"li l2\">majetková<\/div><div class=\"li l2\">nemajetkové - zásah do dobré pověsti<\/div><p>Újma - jakékoliv zhoršení právního, majetkového či osobního postavení člověka<\/p><div class=\"li l1\">majetková újma - způsobení škody na majetku<\/div><div class=\"li l1\">nemajetková - narušení zdraví, dobrého jména nebo soukromí<\/div><p>Odpovědnost za škodu - povinnost osoby nahradit újmu způsobenou protiprávním jednáním, majetkovou či nemajetkovou<\/p><p>Bezdůvodné obohacení - situace, kdy někdo získá majetkový prospěch na úkor někoho jiného bez právního důvodu, ten kdo se obohatil má povinnost to druhé straně vrátit<\/p><div class=\"li l1\">príklad - omylem pošlete peníze na cizí účet, příjemce je povinen je vrátit<\/div>"},{"id":37,"title":"Odpovědnost za vady a za prodlení","html":"<p>Odpovědnost za vady<\/p><div class=\"li l1\">dlužník je povinen dluh splatit včas a řádně - bez vad<\/div><div class=\"li l1\">věc je vadná jestliže neodpovídá smlouvě nebo účelu jejího využití<\/div><div class=\"li l1\">dlužník nese odpovědnost za vady<\/div><div class=\"li l1\">vady faktické<\/div><div class=\"li l2\">týká se vlastností věcí samotné<\/div><div class=\"li l2\">příklad - koupíte telefon, který nefunguje<\/div><div class=\"li l1\">vady právní<\/div><div class=\"li l2\">týká se právního vztahu k věci<\/div><div class=\"li l2\">příklad - koupíte dům od někoho kdo ho nevlastnil<\/div><p>Záruka - závazek, že zboží po nějakou dobu bude mít určité vlastnosti a bude bez vad<\/p><p>Odpovědnost za prodlení - nastává v případě kdy subjekt neplní svoje povinnosti řádně a včas<\/p><div class=\"li l1\">u dlužníka<\/div><div class=\"li l2\">dlužník nesplní svůj závazek řádně a včas<\/div><div class=\"li l2\">podstatné porušení smlouvy - věřitel může okamžitě odstoupit od smlouvy<\/div><div class=\"li l3\">příklad - dlužník vymlátil okna v podnájmu<\/div><div class=\"li l2\">nepodstatné porušení smlouvy - věřitel poskytne možnost nápravy, když není splněna může odstoupit<\/div><div class=\"li l3\">příklad - nesplácel včas, dostal úroky z prodlení<\/div><div class=\"li l1\">u věřitele<\/div><div class=\"li l2\">když nedodržuje plnění smlouvy<\/div><div class=\"li l2\">příklad - nedoručí dlužníkovi něco co měl<\/div><div class=\"li l2\">dluh nezaniká<\/div><div class=\"li l2\">dlužník má právo na odstoupení od smlouvy<\/div>"},{"id":38,"title":"Soudní systém v ČR(soustava obecných soudů a Ústavní soud). Druhy civilního procesu, zásady soudních řízení","html":"<p>Soudnictví v ČR = činnost nezávislých soudů, které rozhodují spory a kontrolují dodržování práv podle ústavy a zákonů<\/p><p>Soustava soudů<\/p><div class=\"li l1\">Nejvyšší soud - v Brně, sleduje a vyhodnocuje rozhodnutí soudů<\/div><div class=\"li l1\">Vrchní soudy - v Praze a Olomouci<\/div><div class=\"li l1\">Krajské soudy - rozhodují o společensky významných věcech (autorská práva, tresty)<\/div><div class=\"li l1\">Okresní soudy - nejnižší článek soustavy<\/div><p>Soudci - občan ČR, 30 let, právnické vzdělání, jmenován prezidentem<\/p><p>Přísedící - občan ČR, 30 let, bez právnického vzdělání, jmenován zastupitelstvem Justiční čekatelé - budoucí soudci<\/p><p>Druhy civilního procesu:<\/p><div class=\"li l1\">sporné řízení<\/div><div class=\"li l2\">řeší spor mezi stranami<\/div><div class=\"li l2\">cílem je rozhodnout kdo má pravdu<\/div><div class=\"li l2\">příklad - spor o zaplacení dluhu<\/div><div class=\"li l1\">nesporné řízení<\/div><div class=\"li l2\">řeší věci, kde nejde o spor mezi stranami<\/div><div class=\"li l2\">příklad - prohlášení za mrtvého nebo řízení o dědictví<\/div><div class=\"li l1\">exekuční řízení - slouží k vymáhání (třeba dluhu)<\/div><div class=\"li l1\">insolvenční řízení<\/div><p>Zásady soudního řízení<\/p><div class=\"li l1\">rovnost (účastníků před soudem)<\/div><div class=\"li l1\">nezávislost a nestrannost (soudy)<\/div><div class=\"li l1\">projednací(povinnost poskytnout soudu potřebné údaje)<\/div>"},{"id":39,"title":"Řešení sporů před soudy - průběh občanského soudního řízení, opravné prostředky","html":"<p>Průběh občanského soudního řízení:<\/p><div class=\"li l1\">Podání žaloby - jedna strana podá žalobu, kde je uvedeno čeho se domáhá<\/div><div class=\"li l1\">Příprava řízení - soud přezkoumá žalobu, případně vyzve strany k doplnění údajů<\/div><div class=\"li l1\">Jednání - předkládání argumentů, údajů a svědků<\/div><div class=\"li l1\">Rozsudek - rozhodnutí zda má žalobce nárok na své požadavky či nikoliv<\/div><p>Druhy rozhodnutí:<\/p><div class=\"li l1\">Rozsudek - konečné rozhodnutí<\/div><div class=\"li l1\">Usnesení - řeší procesní řízení, například přerušení<\/div><div class=\"li l1\">Platební rozkaz - vydán ve zkráceném řízení<\/div><p>Opravné prostředky:<\/p><div class=\"li l1\">Odvolání - napadení rozhodnutí soudu, pokud s ním nesouhlasíš, případ jde k vyššímu soudu na přezkoumání<\/div><div class=\"li l1\">Dovolání - podává se k nejvyššímu soudu, řeší se něco důležitého<\/div><div class=\"li l1\">Obnova řízení - většinou pokud se objeví nové důkazy<\/div><div class=\"li l1\">Žaloba pro zmatečnost - uplatňuje se, pokud došlo k procesním chybám<\/div>"},{"id":40,"title":"Mimosoudní způsoby řešení sporů, rozhodčí řízení a alternativní způsoby řešení sporů","html":"<p>Rozhodčí řízení:<\/p><div class=\"li l1\">alternativní způsob řešení sporů mimo soudy<\/div><div class=\"li l1\">strany se musí na rozhodčím řízení dohodnout ve smlouvě - musí to být zletilá, svéprávná a bezúhonná fyzická osoba<\/div><div class=\"li l1\">nelze se odvolat, rozhodnutí rozhodčího je závazné a vykonatelné stejně jak u soudu<\/div><div class=\"li l1\">výhody - časové a finanční<\/div><p>Alternativní způsoby řešení sporů<\/p><div class=\"li l1\">Negociace - strany řeší spor přímo mezi sebou bez účasti třetí strany<\/div><div class=\"li l1\">Mediace - řešení sporu s pomocí nestranného prostředníka mediátora, který navrhuje řešení a usnadˇnuje komunikaci<\/div><div class=\"li l1\">Facilitace - prostředník který pomáhá stranám lépe pochopit své pozice, nenavrhuje řešení<\/div>"}];
+const LV=[{k:0,n:"Vůbec",v:"--l0"},{k:1,n:"Napůl",v:"--l1"},{k:2,n:"Skoro vše",v:"--l2"},{k:3,n:"Úplně",v:"--l3"}];
+const KEY="pravo.znalosti.v1";
+let S={};
+const $=id=>document.getElementById(id);
+const esc=x=>String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const lvl=id=>(S[id]===undefined?null:S[id]);
+const fkey=id=>{const l=lvl(id);return l===null?"n":String(l)};
+const ALL=["n","0","1","2","3"];
+let ovF="all",cdF=new Set(ALL),order=T.map(t=>t.id),pos=0,flipped=false,shuf=false,view="ov";
+
+window.loadLaw=function(){
+  try{S=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){S={}}
+  if(typeof S!=="object"||Array.isArray(S))S={};
+  order=deck();
+};
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(window.__fbSave)window.__fbSave("law",S);
+}
+function counts(){const c={n:0,0:0,1:0,2:0,3:0};T.forEach(t=>c[fkey(t.id)]++);return c}
+function seg(id){
+  const cur=lvl(id);
+  return `<div class="seg" role="group" aria-label="Jak umím téma">`+LV.map(l=>`<button class="lv" data-k="${l.k}" data-id="${id}" aria-pressed="${cur===l.k}">${l.n}</button>`).join("")+`</div>`;
+}
+function ovHTML(){
+  const c=counts();
+  const pct=Math.round(T.reduce((a,t)=>a+(lvl(t.id)||0),0)/(3*T.length)*100);
+  const bar=[3,2,1,0,"n"].map(k=>`<span style="width:${c[k]/T.length*100}%;background:var(${k==="n"?"--lx":LV[k].v})"></span>`).join("");
+  const leg=[3,2,1,0].map(k=>`<span><i style="background:var(${LV[k].v})"></i>${LV[k].n}: ${c[k]}</span>`).join("")+`<span><i style="background:var(--lx)"></i>Neohodnoceno: ${c.n}</span>`;
+  const chips=[["all","Všechna"],["n","Neohodnoceno"],["0","Vůbec"],["1","Napůl"],["2","Skoro vše"],["3","Úplně"]].map(([k,n])=>`<button class="chip" data-f="${k}" aria-pressed="${ovF===k}">${n} (${k==="all"?T.length:c[k]})</button>`).join("");
+  const rows=T.filter(t=>ovF==="all"||fkey(t.id)===ovF).map(t=>{const l=lvl(t.id);return `<article class="row" data-l="${l===null?"":l}"><span class="num">${t.id}.</span><button class="ttl" data-open="${t.id}">${esc(t.title)}</button>${seg(t.id)}</article>`}).join("")||`<div class="empty">V této skupině není žádné téma.</div>`;
+  return `<div class="panel"><div class="big">${pct} %</div><div class="note">celková připravenost (úplně = 100 %, vůbec nebo neohodnoceno = 0 %)</div><div class="bar" role="img" aria-label="Rozložení znalostí">${bar}</div><div class="legend">${leg}</div></div><div class="chips">${chips}</div>${rows}<div class="tools"><span></span><button class="btn danger" id="reset">Smazat všechna hodnocení</button></div>`;
+}
+function deck(){
+  const d=T.filter(t=>cdF.has(fkey(t.id))).map(t=>t.id);
+  if(shuf)for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}
+  return d;
+}
+function cdHTML(){
+  const c=counts();
+  const chips=[["n","Neohodnoceno"],["0","Vůbec"],["1","Napůl"],["2","Skoro vše"],["3","Úplně"]].map(([k,n])=>`<button class="chip" data-c="${k}" aria-pressed="${cdF.has(k)}">${n} (${c[k]})</button>`).join("");
+  let body;
+  if(!order.length)body=`<div class="panel empty" style="cursor:default">Žádná kartička neodpovídá výběru. Zapni aspoň jednu skupinu výše.</div>`;
+  else{
+    if(pos>=order.length)pos=0;
+    const t=T.find(x=>x.id===order[pos]);
+    body=`<div class="panel card${flipped?" back":""}" id="card"><div class="no">Téma ${t.id} z ${T.length} · kartička ${pos+1} z ${order.length}</div><h2>${esc(t.title)}</h2>${flipped?`<div class="txt">${t.html}</div>`:`<div class="hint">Zkus si téma říct nahlas, pak kartičku otoč.</div>`}</div>
+    <div class="nav"><button class="btn" id="prev">Předchozí</button><button class="btn pri" id="flip">${flipped?"Zpět na nadpis":"Otočit kartičku"}</button><button class="btn" id="next">Další</button></div>
+    <div class="panel rate"><p>Jak dobře toto téma umíš?</p>${seg(t.id)}</div>`;
+  }
+  return `<div class="chips">${chips}</div><div class="tools"><button class="chip" id="shuf" aria-pressed="${shuf}">Náhodné pořadí</button></div>${body}`;
+}
+function paint(){
+  $("ov").hidden=view!=="ov";$("cd").hidden=view!=="cd";
+  $("t-ov").setAttribute("aria-selected",view==="ov");
+  $("t-cd").setAttribute("aria-selected",view==="cd");
+  if(view==="ov")$("ov").innerHTML=ovHTML();else $("cd").innerHTML=cdHTML();
+}
+window.renderLaw=paint;
+function go(d){pos=(pos+d+order.length)%order.length;flipped=false;paint()}
+function setLv(id,k){if(lvl(id)===k)delete S[id];else S[id]=k;save();paint()}
+function setView(v){view=v;paint()}
+$("t-ov").onclick=()=>setView("ov");
+$("t-cd").onclick=()=>setView("cd");
+$("logout-btn").onclick=()=>{if(window.__signOut)window.__signOut()};
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button,#card");if(!b||b.id==="logout-btn"||b.id==="t-ov"||b.id==="t-cd")return;
+  if(b.dataset.k!==undefined)return setLv(+b.dataset.id,+b.dataset.k);
+  if(b.dataset.f)return(ovF=b.dataset.f,paint());
+  if(b.dataset.open){cdF=new Set(ALL);shuf=false;order=deck();pos=Math.max(0,order.indexOf(+b.dataset.open));flipped=false;return setView("cd")}
+  if(b.dataset.c){cdF.has(b.dataset.c)?cdF.delete(b.dataset.c):cdF.add(b.dataset.c);order=deck();pos=0;flipped=false;return paint()}
+  if(b.id==="shuf"){shuf=!shuf;order=deck();pos=0;flipped=false;return paint()}
+  if(b.id==="card"||b.id==="flip"){flipped=!flipped;return paint()}
+  if(b.id==="prev")return go(-1);
+  if(b.id==="next")return go(1);
+  if(b.id==="reset"&&confirm("Opravdu smazat hodnocení všech témat?")){S={};save();paint()}
+});
+document.addEventListener("keydown",e=>{
+  if(view!=="cd"||!order.length)return;
+  if(e.target&&e.target.closest&&e.target.closest("button,input,textarea,select"))return;
+  if(e.key==="ArrowRight")go(1);else if(e.key==="ArrowLeft")go(-1);else if(e.key===" "){e.preventDefault();flipped=!flipped;paint()}
+});
+window.loadLaw();
+paint();
+</script>
+</body>
+</html>

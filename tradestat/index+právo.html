@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f1c">
+<title>Filip — Apps</title>
+<link rel="manifest" href="manifest.webmanifest">
+<script src="pwa-update.js" defer></script>
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Apps">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#0a0d18;
+  --bg-1:#11152a;
+  --surface:rgba(255,255,255,0.05);
+  --surface-2:rgba(255,255,255,0.08);
+  --line:rgba(255,255,255,0.10);
+  --line-2:rgba(255,255,255,0.18);
+  --text:#eef0f5;
+  --text-dim:#a5acc0;
+  --muted:#666c80;
+
+  --cyan:#5eead4;
+  --violet:#a78bfa;
+  --sage:#6fbf8e;
+  --cream:#f7f4ec;
+  --amber:#e8b25a;
+
+  --serif:'Instrument Serif',serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{overflow-x:hidden;}
+body{
+  background:var(--bg-0);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-size:14px;
+  line-height:1.5;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+}
+
+/* aurora glow */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(94,234,212,0.10), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(167,139,250,0.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(111,191,142,0.06), transparent 60%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.04;
+  background-image:url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.wrap{
+  position:relative;z-index:1;
+  max-width:1080px;margin:0 auto;padding:48px 24px 80px;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+/* ─── top bar ───────────────────────────────── */
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:auto;padding-bottom:48px;
+}
+.brand{display:flex;align-items:center;gap:11px;font-size:12px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.25em;font-weight:600;}
+.brand .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);box-shadow:0 0 10px var(--sage);}
+
+.user-bar{
+  display:none;align-items:center;gap:10px;
+  padding:6px 8px 6px 6px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:32px;
+  font-size:13px;
+}
+.user-bar img{width:28px;height:28px;border-radius:50%;}
+.user-bar .name{color:var(--text-dim);padding-right:4px;}
+.user-bar .logout{
+  background:transparent;border:none;color:var(--muted);cursor:pointer;
+  padding:4px 8px;font-size:13px;border-radius:20px;transition:all .15s;
+  font-family:inherit;
+}
+.user-bar .logout:hover{background:rgba(255,255,255,0.06);color:var(--text);}
+
+/* ─── auth view ─────────────────────────────── */
+.auth{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:22px;
+}
+.auth h1{
+  font-family:var(--serif);font-size:64px;font-weight:400;letter-spacing:-0.02em;
+  line-height:1;color:var(--text);
+}
+.auth h1 em{font-style:italic;color:var(--cyan);}
+.auth p{font-size:15px;color:var(--text-dim);max-width:380px;}
+.auth-btn{
+  display:inline-flex;align-items:center;gap:12px;
+  padding:14px 24px;border-radius:12px;
+  background:#fff;color:#1a1a1a;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:14px;font-weight:600;
+  box-shadow:0 6px 24px rgba(0,0,0,0.3);
+  transition:transform .15s, box-shadow .15s;
+}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(0,0,0,0.35);}
+.auth-btn img{width:22px;height:22px;}
+.auth-error{
+  font-size:13px;color:#fb7185;display:none;
+  background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.3);
+  padding:8px 14px;border-radius:8px;
+}
+
+/* ─── chooser view ──────────────────────────── */
+.chooser{display:none;flex:1;flex-direction:column;}
+.chooser-header{
+  text-align:center;margin-bottom:48px;
+}
+.chooser-greeting{
+  font-size:12px;color:var(--text-dim);
+  text-transform:uppercase;letter-spacing:0.25em;font-weight:600;
+  margin-bottom:12px;
+}
+.chooser-title{
+  font-family:var(--serif);font-size:54px;font-weight:400;letter-spacing:-0.02em;
+  line-height:1.05;color:var(--text);
+}
+.chooser-title em{font-style:italic;color:var(--cyan);}
+
+.apps-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;
+}
+
+.app-card{
+  position:relative;
+  display:flex;flex-direction:column;
+  padding:32px;border-radius:20px;
+  text-decoration:none;color:inherit;cursor:pointer;
+  overflow:hidden;
+  border:1px solid var(--line);
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  min-height:320px;
+}
+.app-card::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,transparent 40%);
+}
+.app-card:hover{transform:translateY(-4px);border-color:var(--line-2);}
+
+/* tradestat card — dark with cyan/violet aurora */
+.app-card.tradestat{
+  background:linear-gradient(160deg,#0e1430 0%, #1a1136 100%);
+}
+.app-card.tradestat::after{
+  content:'';position:absolute;top:-40px;right:-40px;width:240px;height:240px;
+  background:radial-gradient(circle,rgba(94,234,212,0.25),transparent 60%);
+  pointer-events:none;filter:blur(30px);
+}
+.app-card.tradestat:hover{
+  box-shadow:0 20px 50px rgba(94,234,212,0.15);
+  border-color:rgba(94,234,212,0.35);
+}
+
+/* shiftbook card — warm cream with sage */
+.app-card.shiftbook{
+  background:linear-gradient(160deg,#f7f4ec 0%, #efe9da 100%);
+  color:#1a1a1a;
+}
+.app-card.shiftbook::after{
+  content:'';position:absolute;top:-40px;right:-40px;width:240px;height:240px;
+  background:radial-gradient(circle,rgba(63,122,90,0.20),transparent 60%);
+  pointer-events:none;filter:blur(30px);
+}
+.app-card.shiftbook:hover{
+  box-shadow:0 20px 50px rgba(63,122,90,0.18);
+  border-color:rgba(63,122,90,0.35);
+}
+
+/* pravo card — dark with warm amber */
+.app-card.pravo{
+  background:linear-gradient(160deg,#1d1710 0%, #2a1c12 100%);
+}
+.app-card.pravo::after{
+  content:'';position:absolute;top:-40px;right:-40px;width:240px;height:240px;
+  background:radial-gradient(circle,rgba(232,178,90,0.25),transparent 60%);
+  pointer-events:none;filter:blur(30px);
+}
+.app-card.pravo:hover{
+  box-shadow:0 20px 50px rgba(232,178,90,0.15);
+  border-color:rgba(232,178,90,0.35);
+}
+
+.app-icon{
+  width:54px;height:54px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:22px;
+  position:relative;z-index:1;
+}
+.tradestat .app-icon{
+  background:linear-gradient(135deg,#5eead4 0%, #a78bfa 100%);
+  color:#061018;
+  box-shadow:0 6px 20px rgba(94,234,212,0.3);
+}
+.shiftbook .app-icon{
+  background:linear-gradient(180deg,#4b8e6a 0%,#2f5d44 100%);
+  color:#fff;
+  box-shadow:0 6px 20px rgba(63,122,90,0.3);
+}
+.pravo .app-icon{
+  background:linear-gradient(135deg,#f5c26b 0%,#d99c4d 100%);
+  color:#1a1208;
+  box-shadow:0 6px 20px rgba(232,178,90,0.3);
+}
+.app-icon svg{width:28px;height:28px;}
+
+.app-name{
+  font-family:var(--serif);font-size:34px;font-weight:400;letter-spacing:-0.02em;
+  line-height:1.05;margin-bottom:6px;position:relative;z-index:1;
+}
+.tradestat .app-name em{font-style:italic;color:var(--cyan);}
+.shiftbook .app-name em{font-style:italic;color:#3f7a5a;}
+.pravo .app-name em{font-style:italic;color:var(--amber);}
+.app-tag{
+  font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.22em;
+  color:var(--text-dim);
+  margin-bottom:14px;position:relative;z-index:1;
+}
+.shiftbook .app-tag{color:#6b6962;}
+.app-desc{
+  font-size:14px;line-height:1.55;
+  color:var(--text-dim);
+  position:relative;z-index:1;
+  margin-bottom:auto;padding-bottom:22px;
+}
+.shiftbook .app-desc{color:#3a3a38;}
+
+.app-arrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;
+  color:var(--cyan);
+  position:relative;z-index:1;
+}
+.shiftbook .app-arrow{color:#3f7a5a;}
+.pravo .app-arrow{color:var(--amber);}
+.app-arrow svg{width:16px;height:16px;transition:transform .2s;}
+.app-card:hover .app-arrow svg{transform:translateX(4px);}
+
+/* ─── loading state ─────────────────────────── */
+.loading{
+  flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  color:var(--text-dim);
+}
+.spinner{
+  width:32px;height:32px;border:2px solid var(--line);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ─── footer ────────────────────────────────── */
+.foot{
+  margin-top:48px;text-align:center;font-size:11px;color:var(--muted);
+  font-family:var(--mono);
+  letter-spacing:0.08em;
+}
+
+@media (max-width:900px){
+  .apps-grid{grid-template-columns:1fr;gap:14px;}
+  .app-card{min-height:260px;}
+}
+@media (max-width:700px){
+  .wrap{padding:28px 18px 48px;}
+  .topbar{padding-bottom:32px;}
+  .auth h1{font-size:46px;}
+  .chooser-title{font-size:38px;}
+  .chooser-header{margin-bottom:32px;}
+  .apps-grid{grid-template-columns:1fr;gap:14px;}
+  .app-card{padding:26px;min-height:260px;}
+  .app-name{font-size:28px;}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span> Filip · Apps</div>
+    <div class="user-bar" id="user-bar">
+      <img id="user-photo" src="" alt="">
+      <span class="name" id="user-name">—</span>
+      <button class="logout" id="logout-btn" title="Odhlásit">Odhlásit</button>
+    </div>
+  </header>
+
+  <!-- AUTH view -->
+  <section class="auth" id="auth-view">
+    <h1>Vítej <em>zpátky</em>.</h1>
+    <p>Přihlas se Google účtem pro přístup k tvým aplikacím.</p>
+    <button class="auth-btn" id="login-btn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
+      Přihlásit se přes Google
+    </button>
+    <div class="auth-error" id="auth-error"></div>
+  </section>
+
+  <!-- LOADING view -->
+  <section class="loading" id="loading-view">
+    <div class="spinner"></div>
+    <div>Přihlašuji…</div>
+  </section>
+
+  <!-- CHOOSER view -->
+  <section class="chooser" id="chooser-view">
+    <div class="chooser-header">
+      <div class="chooser-greeting" id="greeting">Dobrý den</div>
+      <h1 class="chooser-title">Vyber <em>aplikaci</em></h1>
+    </div>
+
+    <div class="apps-grid">
+      <a class="app-card tradestat" href="./tradestat/">
+        <div class="app-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17l6-6 4 4 8-8"/>
+            <path d="M14 7h7v7"/>
+          </svg>
+        </div>
+        <div class="app-tag">Trading Journal</div>
+        <div class="app-name">Trade<em>Stat</em></div>
+        <p class="app-desc">Deník obchodů, statistiky výkonu, cíle, P/L, otevřené pozice a benchmarky.</p>
+        <span class="app-arrow">Otevřít <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+      </a>
+
+      <a class="app-card shiftbook" href="./shiftbook/">
+        <div class="app-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15 14"/>
+          </svg>
+        </div>
+        <div class="app-tag">Evidence směn</div>
+        <div class="app-name">Shift<em>book</em></div>
+        <p class="app-desc">Zaznamenávej směny, hodiny, dýška a hodinovou sazbu. Sleduj denní i celkový výdělek.</p>
+        <span class="app-arrow">Otevřít <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+      </a>
+
+      <a class="app-card pravo" href="./pravo/">
+        <div class="app-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/><path d="M6 21h12"/><path d="M5 7h14"/>
+            <path d="M5 7l-3 7a3 3 0 0 0 6 0z"/><path d="M19 7l-3 7a3 3 0 0 0 6 0z"/>
+          </svg>
+        </div>
+        <div class="app-tag">Příprava na test</div>
+        <div class="app-name">Prá<em>vo</em></div>
+        <p class="app-desc">Hodnoť, jak umíš jednotlivá témata z práva, sleduj celkovou připravenost a procvičuj na kartičkách.</p>
+        <span class="app-arrow">Otevřít <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+      </a>
+    </div>
+
+    <div class="foot">Data jsou ukládána v Google Firebase · synchronizace napříč zařízeními</div>
+  </section>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const fb = initializeApp({
+  apiKey:"AIzaSyB8s6y1urPSQFKaiNHrAIebB_givFtGPTg",
+  authDomain:"tradestat-18e24.firebaseapp.com",
+  projectId:"tradestat-18e24",
+  storageBucket:"tradestat-18e24.firebasestorage.app",
+  messagingSenderId:"1081488272976",
+  appId:"1:1081488272976:web:65156e690afc02bb682b55"
+});
+const auth = getAuth(fb);
+
+const $ = (id) => document.getElementById(id);
+const show = (which) => {
+  ['auth-view','loading-view','chooser-view'].forEach(id => {
+    $(id).style.display = id === which + '-view' ? 'flex' : 'none';
+  });
+};
+
+$('login-btn').addEventListener('click', async () => {
+  try {
+    $('auth-error').style.display = 'none';
+    show('loading');
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch (e) {
+    show('auth');
+    $('auth-error').textContent = 'Chyba přihlášení: ' + e.message;
+    $('auth-error').style.display = 'block';
+  }
+});
+
+$('logout-btn').addEventListener('click', () => {
+  if (confirm('Odhlásit se?')) signOut(auth);
+});
+
+function greetingFor(name){
+  const h = new Date().getHours();
+  const part = h < 11 ? 'Dobré ráno' : h < 18 ? 'Dobrý den' : 'Dobrý večer';
+  return name ? `${part}, ${name.split(' ')[0]}` : part;
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user){
+    $('greeting').textContent = greetingFor(user.displayName || user.email);
+    $('user-photo').src = user.photoURL || '';
+    $('user-photo').style.display = user.photoURL ? 'block' : 'none';
+    $('user-name').textContent = user.displayName || user.email;
+    $('user-bar').style.display = 'flex';
+    show('chooser');
+  } else {
+    $('user-bar').style.display = 'none';
+    show('auth');
+  }
+});
+
+// initial: hide all until auth state determined
+show('loading');
+$('loading-view').querySelector('div:last-child').textContent = 'Načítám…';
+</script>
+
+</body>
+</html>
